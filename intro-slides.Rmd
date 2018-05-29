@@ -1,0 +1,266 @@
+---
+title: 'SRE: Co-harvesting'
+author: "[Charlotte Chang](chchang@nimbios.org) and Xingli Giam"
+date: "5/28/2018"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Overview
+*State of knowledge*
+
+## Bushmeat hunting
+
+- Pan-tropics:
+    + Congo: 4.9-5 million tons
+    + Amazon basin: 150,000 tons
+    + Sarawak, Malaysia: 23,500 tons
+- Livelihoods:
+    + Amazon: 5-8 million
+    + 80-90% protein consumed in West/Central Africa
+    + Madagascar: 29% increase in childhood anemia absent bushmeat
+- Note that these slides can be accessed at [GitHub](https://github.com/charlottehchang/SRE_coharvest) or [RPubs](http://rpubs.com/chwchang/SRE-intro)
+
+## Plant harvesting
+
+- "Non-timber forest products" (NTFP): seeds, flowers, fruits, leaves, roots, bark, and latex
+- Often used for food, medicine, and construction
+- Prominent source of income in many tropical areas
+
+## Interactions: A major knowledge gap {.smaller}
+
+- Anecdotal observations such as "'Castaneros' are paid by the nut volume (or “box”) they harvest and are charged for the food and supplies delivered to the forest for their consumption. As in other tropical countries, these extractive activities have largely depended on bush meat to feed work crews."
+- We know from predator-prey and apparent competition literature that harvesting more than one species (even if they don't directly interact as in the case of apparent competition) can lead to quite different outcomes than single-species harvesting
+- NTFP plant harvest is often sub-lethal, which makes the role of harvesting on the long-run dynamics for (interacting) plants and animals potentially more complex and interesting
+
+# Research background
+*Population ecology*
+
+## Modeling populations {.smaller}
+
+- We can model how population sizes change through (discrete) time using $N_{t+1} = \lambda N_{t}$.
+- Implicit in that previous model is a key assumption: *all individuals in a population contribute equally to growth* (or equivalently, decline)
+- Yet many species exhibit strong age- or size-dependent reproduction and survivorship effects.
+- That is, they fall into **categories**
+
+## Age and stage structure {.smaller}
+
+- In ecology, [Leslie matrices](http://www.eeb.cornell.edu/ellner/lte/chapter5.pdf) (Caswell, Chapter 2) are used to model age-structured populations.
+    + Leslie matrix models have some rigid assumptions, chief of which are: 1) individuals must move from one age group to another, 2) death must happen for the oldest age group.
+- On the other hand, stage (Usher or Lefkovich)-based models focus on size or other ontogenetic stages. 
+    + Ontogeny is a fancy, catch-all phrase that denotes distinct phases in an organism's developmental process.
+    + Stage-structured matrices permit for individuals to remain within the same categories
+
+$$\left[\begin{array}
+{c}
+n_0\\
+n_1 \\
+\dots\\
+n_{max}
+\end{array}\right]_{t+1} = \left[\begin{array}
+{ccc}
+f_{0,0} & f_{1,0} & \dots & f_{max, 0}\\
+c_{0,1} & c_{1,1} & 0 & 0 \\
+. & . &. &. \\
+c_{0,max} & c_{1,max} & \dots & c_{max,max} 
+\end{array}\right] \left[\begin{array}
+{c}
+n_0\\
+n_1 \\
+\dots\\
+n_{max}
+\end{array}\right]_{t}
+$$
+
+## Applying stage structure to harvesting
+
+- Trees often exhibit strong stage-structure:
+   + Reproduction occurs at discrete intervals (once a year or every few years...or longer)
+   + Both reproductive output as well as survivorship are a function of size/age
+- This is also true of mammals, but we often lack data (especially in the tropics)
+
+## How do we model harvesting? {.smaller}
+
+- Mechanistic:
+    + Harvesters are allocating effort by trying to maximize profits--costs.
+    + Harvesters are trying to meet some fixed threshold within the minimum amount of time, cost, or effort.
+- Phenomenological:
+    + There is a sequence of harvest happening at different *intensities* that is described by a probabilistic transition process.
+        - Intensity in harvest most often pertains to harvester effort and/or offtake (amount of fruit/timber/bushmeat extracted).
+- Note that for now, this does not consider **space**.
+- We often represent space in a very stylized (abstract/simplified) way as a set of "patches" which interact, for example, through emigration and immigration.
+
+# Initial research approach
+
+## Examples of (co-)harvested species pair
+
+- Brazil nut (*Bertholletia excelsa*) and agouti (*Cuniculus* spp. and *Dasyprocta* spp.)
+    + There are some example parameters out there for this species pair
+- Other species pairs--we will work with you to identify them! 
+
+## Several key assumptions {.smaller}
+
+- We will initially focus on people harvesting plants and hunting (mammalian) seed dispersers (animals that help increase germination rates; therefore also increasing population growth of plants)
+- Plant reproduction has a discrete-time process (fruiting pulse)
+- Hunting intensity only relates to the last time step (Markov process)
+- Simulation approach
+
+```{r, echo=FALSE}
+library(htmlTable)
+
+assumptions_df <- data.frame(rbind(Scenario1=c(1,0),
+                             Scenario2=c(0,1),
+                             Scenario3=c(1,1)))
+names(assumptions_df) <- c("Plant Hunted","Animal Hunted")
+htmlTable(assumptions_df, tfoot="Initial scenarios for exploration in modeling plant and seed disperser co-harvest")
+```
+
+## Example set-up
+
+- Plants: seedling, sapling, and adult tree stage classes
+- Animal: discrete-time logistic growth
+- Harvesting:
+    + Removes some proportion of animals and adult plants
+    + Intensities: Low and high
+    + Harvest only depends on previous state
+
+## Simulating plants
+
+- Stage-structured matrix
+```{r, echo=F}
+plant_n0 <- runif(3)*c(1000, 100, 50)
+
+  # Parameters from Table 3 in Zuidema
+seed_seed <- mean(c(0.455, 0.587, 0.780, 0.821)) # could do weighted mean based on table 2
+seed_sap <- 0.091*0.147*0.134*0.167
+sap_sap <- mean(c(0.941, 0.938, 0.961, 0.946, 0.940, 0.937, 0.936))
+sap_adult <- 0.044*0.047*0.034*0.049*0.055*0.058*0.059
+adult_seed <- mean(c(12.3,14.6,16.9,19.3,22.3,26.6))
+adult_adult <- mean(c(0.966+0.029,0.968+0.027, 0.971+0.024, 0.965+0.02, 0.967+0.018, 0.985))
+plant_S_mat <- matrix(c(seed_seed,0,adult_seed,
+                      seed_sap, sap_sap, 0,
+                      0, sap_adult, adult_adult), nrow=3, byrow=T)
+# Need some dependency on seed disperser!
+htmlTable(signif(plant_S_mat,2), header=c("Seedling (t)","Sapling (t)","Adult (t)"), rnames=c("Seedling (t+1)","Sapling (t+1)", "Adult (t+1)"), tfoot="Stage-structured matrix for Brazil nut ('A', parameters from Zuidema 2000).")
+```
+
+## Simulating animals {.smaller}
+
+$$N_{t+1} = N_t + rN_{t} \left( 1-\frac{N_t}{K} \right)$$
+
+- $r_{max}$ for the 4kg *Dasyprocta variegata* is 1.1 (Robinson and Bennett)
+- $K$ (carrying capacity) may be around the order of 5.2/$km^2$. If our study landscape is 1000$km^2$ then the carrying capacity is 5200
+```{r, eval=F, echo=T}
+LogisticGrowth <- function(R, N, K) {
+	Nnext <- R*N*(1-N/K) + N
+	return(Nnext)
+}
+
+N <- c(100); t.steps <- c(1:100) # simulate 100 years
+for (i in 2:length(t.steps)) {
+  N <- N[i-1]
+  N[i] <- LogisticGrowth(1.1, N, 5200)
+}
+```
+
+## Combining plants and animals {.smaller}
+
+- We might assume that the abundance of agoutis dictates the *adult $\rightarrow$ seedling* reproduction rate.
+- As such, $f_{a,s}$ depends on $n_{agouti}$ and $n_{\text{adult tree}}$.
+- $r_{max}$ for agouti may depend on the availability of Brazil nut fruits (which is proxied by Brazil nut adult trees)
+    + Not implemented in the example.
+- A simple way to represent these interdependencies is to use a sigmoidal function bound between $[0, 1]$.
+
+```{r, echo=T}
+###====================================================================
+### Plant and animal dynamics under harvest
+###====================================================================
+  # Plant
+plant_mat_low <- plant_S_mat
+plant_mat_high <- plant_S_mat * matrix(c(1,1,0.85,1,1,1,1,1,0.9), nrow=3, byrow=T)
+sigmoid <- function(k, x0, x) {
+  1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
+} # plant_animal <- matrix(c(1,1,sigmoid(1, K_animal*0.5, N),1,1,1,1,1,1), nrow=3, byrow=T)
+  # Animal
+LogisticGrowthHunt <- function(R, N, K, H) {
+	Nnext <- R*N*(1-N/K) - H*N + N
+	return(Nnext)
+} # some proportion of N_t are harvested
+```
+
+## Introducing harvest {.smaller}
+
+- We can start by considering low and high harvest.
+- We would represent this by modifying $\mathbf{A}$ while subjecting agoutis to hunting.
+
+```{r, echo=T, message=F}
+library(markovchain)
+###====================================================================
+### Harvest markov chain
+###====================================================================
+# Specifying the markov chain
+statesNames = c("low","high")
+mcHarvest <- new("markovchain", states = statesNames, 
+                 transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
+                 nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
+# Simulating a discrete time process for harvest
+set.seed(100); time_end <- 50
+harvest_seq <- rmarkovchain(n=time_end, object = mcHarvest, t0="low")
+head(harvest_seq)
+```
+
+## Simulation example {.smaller}
+
+```{r, echo=T}
+###====================================================================
+### For loop simulation
+###====================================================================
+plant_mat <- matrix(c(5000, 500, 100), ncol=1); agouti_vec <- c(5000)
+for (i in 1:time_end) {
+  h_i <- harvest_seq[i]
+  if (h_i == "low") {
+    pmat <- plant_mat_low
+    h_off <- 0.1
+  } else {
+    pmat <- plant_mat_high
+    h_off <- 0.25
+  }
+  agouti_vec[(i+1)] <- LogisticGrowthHunt(1.1, agouti_vec[(i)],5200,h_off)
+  plant_animal_mat <- matrix(c(1,1,sigmoid(1, 5200*0.5, agouti_vec[(i+1)]),1,1,1,1,1,1), nrow=3, byrow=T)
+  plant_mat <- cbind(plant_mat, c( (plant_animal_mat * pmat) %*% plant_mat[,(i-1)]))
+}
+```
+
+## Plot of simulation output
+
+```{r, echo=F}
+par(mar=c(5,4,1,1),oma=c(0,0,0,0))
+plot(agouti_vec/5200,xlab="",ylab="Population size/Max size", col="brown", ylim=c(0,1), type="l",xlim=c(1,50),xaxs="i")
+lines(plant_mat[1,]/5000, col="forestgreen")
+lines(plant_mat[2,]/500, col="turquoise3")
+lines(plant_mat[3,]/100, col="orange")
+legend("bottomleft", c("Animal","Adult","Sapling","Seedling"),col=c("brown","forestgreen","turquoise3","orange"),lty=c(1,1,1,1), bty="n",ncol=2)
+mtext("Time step", 1, line=1.85, at=25, col="black")
+axis(1,1:time_end,labels=toupper( substr(harvest_seq,1,1) ),line=2,col=NA,col.ticks=NA,col.axis="black", cex.axis=0.65)
+mtext("Harvest:",1,line=3,at=-2.5,col="black")
+```
+
+# Follow-on projects
+
+## Making harvest more realistic
+
+- Harvest is not just a function of harvest intensity at the last time step
+- (Fruiting) plant and animal abundance influence harvest rates
+
+## Adding a spatial dimension
+
+- Plant locations are fixed but animals can decide where they go.
+- Adding a spatial component to harvester site selection.
+
+## Ecological modeling for *real data*
+
+- Potential to integrate presence-absence data into a species distribution model framework
+- This will provide some insight on what some real world landscapes of interacting species might look like
