@@ -1,0 +1,190 @@
+---
+title: "Tabulizer and Digitizer examples"
+author: "KEA - SPA"
+date: "6/5/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+###========================================================================
+### In this code block, I will be loading the required libraries (packages) for the analyses shown below.
+###========================================================================
+
+### Devtools: a package that contains tons of useful functions for creating and downloading R packages from GitHub directly
+# install.packages("devtools") # only need to run install.packages once to install the package into your R library; delete the leading hash to run this command.
+library('devtools')
+
+### Digitize: a package that replicates external freeware such as WebPlotDigitizer
+# devtools::install_github("tpoisot/digitize") # similarly, you only need to do this once
+library(digitize)
+
+### Tabulizer: a package that provides bindings for Java's tabula library for R
+# install.packages("tabulizer")
+library(tabulizer) # there are a LOT of infuriating issues with tabulizer installation, at least when I had tried.
+
+#### Googledrive: a package that imports files from Google Drive folders, even Team Drives!
+#install.packages("googledrive")
+library(googledrive)
+```
+
+You can see a rendered version (html) of this document in [RPubs](http://rpubs.com/chwchang/KEA-SPA-digitize).
+
+## Rrrresources
+
+FMI on the nitty gritty of R and general tips/tricks:
+
+* [YaRrr! The Pirate's Guide to R](https://bookdown.org/ndphillips/YaRrr/where-did-this-book-come-from.html)
+* [Grolemund and Wickham](http://r4ds.had.co.nz/intro.html)
+* [Jenny Bryan's Stat 545 course](http://stat545.com/topics.html)
+* [Julie Lowndes](http://jules32.github.io/2016-07-12-Oxford/R_RStudio/)
+* [R for CEPF intro slides](http://rpubs.com/chwchang/392088)
+
+A humorous (and insightful) take comes from seasoned python programmers who feel very *Arrrgh* about R
+
+* [John D Cook](https://www.johndcook.com/blog/r_language_for_programmers/)
+* [aRrgh: an angry guide to R](http://arrgh.tim-smith.us/)
+
+Let us know if you'd like more resources!
+
+### Issues with installation
+
+Installing `tabulizer` can be difficult due to underlying problems with `rJava` that can be frustratingly opaque and difficult to diagnose. Here are my notes for how I managed to get `rJava` and subsequently, `tabulizer` to install properly.
+
+1. It looks like I can't get `tabulizer` to install because of [pointing issues](https://github.com/ropensci/tabulizer/issues/42) and/or version issues for the Java distribution that `rJava` is trying to point to.
+    a. Needs to be Java 1.7 or 1.8 on up, but either on the `tabulizer` or `tabula` (`tabula` is the Java library that `tabulizer` imports into R) end, it seems like it gets rJava to default point to v 1.6.x if it is on the machine.
+2. Open terminal and type the following:
+    1. `MacBook-Pro-5:~ Char$ export JAVA_HOME=\x60/usr/libexec/java_home -v 1.8\x60`
+    2. `MacBook-Pro-5:~ Char$ export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/server`
+    3. `MacBook-Pro-5:~ Char$ env`
+3. From the env command, you should now see:
+    1. `PWD=/Users/Char`
+    2. `JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home`
+    3. `LANG=en_US.UTF-8`
+3. In terminal call `open -a RStudio`
+4. In Rstudio, call:
+```{r, eval=F}
+# install.packages(rJava)
+library(rJava)
+                .jinit()
+                .jcall(“java/lang/System”, “S”, “getProperty”, “java.runtime.version”)
+```
+
+### Examples of using `tabulizer` and `digitize`
+
+* [Digitize examples](https://github.com/tpoisot/digitize)
+* [Tabulizer examples](https://github.com/ropensci/tabulizer)
+
+## Importing an example figure
+
+Below, we will use the `googledrive` package to import the file `Galetti1A.png` from our team drive. We will subsequently call `digitize` to extract information from the barchart.
+
+```{r digitize-galetti, eval=F}
+###===========================================================================
+### Importing and downloading figure from Google Drive Team Folder
+###===========================================================================
+galetti1A_loc <- drive_get(id="10CXIOQAIIoC8Z9K_xjx97PwB63XEU-YR", team_drive = "CoharvestSRE") # Location of Galetti1A figure
+galetti1A_fig <- drive_download(file=galetti1A_loc, path="~/GoogleDrive/Rscripts/SRE_coharvest/Galetti1A.png", overwrite=TRUE) # Downloading the figure to your local folder (note that you can skip these two steps and just directly point and click download instead or work from your local machine)
+
+###===========================================================================
+### Digitizing plot
+###===========================================================================
+
+galetti1A <- digitize::digitize(image_filename=galetti1A_fig$local_path) # Note that you could instead directly specify a local path and bypass the two steps above. Then it would be:
+# galetti1A <- digitize::digitize(image_filename="~/GoogleDrive/Rscripts/SRE_coharvest/Galetti1A.png")
+
+# save(galetti1A, file="~/GoogleDrive/Rscripts/SRE_coharvest/galetti1Adigitize.RData") # save the output to a serialized file
+
+dev.copy(png,"~/Downloads/galetti1A-digitized.png", width=4, height=3, units="in", res=120, bg="transparent") # store the output to file; this is different from the usual routine because the digitizer package needs unencumbered access to the "Plots" tab in RStudio (not sure how it works in base R)
+dev.off()
+```
+
+We can inspect the output by displaying it here:
+
+![galetti1A](/Users/Char/Downloads/galetti1A-digitized.png)
+
+```{r digitize-data}
+###===========================================================================
+### Extracting data
+###===========================================================================
+attach("~/GoogleDrive/Rscripts/SRE_coharvest/galetti1Adigitize.RData")
+galetti1A # we don't care about the X values; these are just dummy values.
+
+### 1: Pulling the y-column out
+galetti1A_data <- galetti1A$y # we only care about the y-axis as this is a barplot with categories on the X
+
+### 2: Pushing these values into a data.frame
+galetti1A_df <- data.frame(Intact=galetti1A_data[c(TRUE,FALSE)],
+                           Rodents=galetti1A_data[c(FALSE,TRUE)]-galetti1A_data[c(TRUE,FALSE)],
+                           Insects=100-galetti1A_data[c(FALSE,TRUE)])
+rownames(galetti1A_df) <- c("JI","Pi","Ca","PA","UN","XJ","SH","Af")
+
+### 3: Displaying the table in a nice format (note that you need to run install.packages("htmlTable"))
+htmlTable::htmlTable( round(galetti1A_df,1), # round to 1 decimal point, also see ?signif
+                      rowlabel="Sites")
+```
+
+My guess from this type of data is what is ultimately useful is:
+
+* What is dispersed (galetti1B; black cells)?
+* The relationship between hunting pressure and/or rodent density and the percentage of seeds that are predated (`preyed upon by rodents` in Galetti's paper) versus dispersed (1B).
+
+## Tabulizer example: Peres *et al.*, Brazil nut harvest
+
+In **Table S1**, Carlos Peres and co-authors present information on the density and population structure of Brazil nut populations.
+
+Steps:
+
+* Import the PDF from the Google Drive Team folder
+* Use tabulizer to import the table
+* Perform cleaning to get the table into a usable format
+
+```{r tabulizer-peres, eval=F}
+###===========================================================================
+### Importing table from PDF
+###===========================================================================
+
+peresPDF <- drive_find(pattern="Peres-BrazilNut-Science", team_drive="CoharvestSRE")
+peresPDFurl <- drive_link(peresPDF)
+# peresS1 <- tabulizer::extract_tables(file=peresPDFurl, pages=10) # uffda, sadly does not quite work. Will have to spend some time troubleshooting
+peresS1 <- tabulizer::extract_tables(file="/Volumes/GoogleDrive/Team Drives/CoharvestSRE/Readings/Parameters/Peres-BrazilNut-Science.full.pdf", pages=10)
+ 
+save(peresS1, file="~/GoogleDrive/Rscripts/SRE_coharvest/peresS1.RData")
+```
+
+```{r tabulizer-peres-cleaning}
+attach("~/GoogleDrive/Rscripts/SRE_coharvest/peresS1.RData")
+###===========================================================================
+### Cleaning table
+###===========================================================================
+head(peresS1[[1]]) # wow it looks AWFUL!
+
+peresS1list <- peresS1[[1]][7:38,]
+peresS1list <- lapply(peresS1list, function(x) {unlist(strsplit(x," "))})
+
+peres_entries <- unlist(lapply(peresS1list, length)) # the table import was wonky so it is incorrectly splitting along newlines
+peres_rows <- which(peres_entries > 3)
+
+peresS1df <- NULL # run a for loop below to extract data from the tabulizer object
+for (i in 1:length(peres_rows)) {
+  peresS1df <- rbind(peresS1df, tail(peresS1list[[peres_rows[i]]], 10))
+}
+
+peresS1df <- data.frame(peresS1df, stringsAsFactors = FALSE) # convert output from matrix to data.frame format
+names(peresS1df) <- c("Latitude","Longitude","AreaHectares","Density-treeHA-1","MeanDBH","pm","SE_DBH","CumS*","PercentJuve","NoTreeSampled")
+peresS1df[c(3:5,7:10)] <- apply(peresS1df[c(3:5,7:10)], 2, as.numeric) # convert several columns to numeric class
+
+peresS1df$HuntIntensity <- c("U","U","P","L","L","P","P","L","M","L","M",rep("U",2),rep("L",6),rep("M",2),"U","M") # argh, this column didn't import so we get to hand impute...lovely
+
+###===========================================================================
+### Displaying table
+###===========================================================================
+htmlTable::htmlTable(peresS1df, rnames=c("Pinkaiti","Kranure","Saraca","Maraba","Tapajos","Alto Cajar","Iratapuru","Aventura","Ussicanta","Lago Ciputuba","Amana","Rio Cristalino","Claudia","Nova Esperanca","Colocacao Tucuma","Colocacao Rio","Encontro","Oculto","Limon","El Tigre","El Sena","Alter do Chao","Rio Ouro Preto"), rowlabel="Sites")
+```
+
+In this case, what we likely care about is:
+
+* Do they specify what "hunt intensity" means? Is it a measure of how many seeds were removed?
+* Is there information on agouti density along with the hunt intensity and juvenile composition data?
+
+To be honest, however, this data set is related but a bit orthogonal IMO to the type of data that we would need.
