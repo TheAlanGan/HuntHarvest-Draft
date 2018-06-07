@@ -2,7 +2,13 @@ library(htmlTable)
 #Kevin is modyfing this file now.
 #kevin is modyfing the code
 
+<<<<<<< HEAD
 #We are testing git/gitgub
+=======
+
+#Alan added a few lines...
+
+>>>>>>> 87f2daad595938cde024d422b12d5c0ada8086b2
 ###=======================================================================
 ### Parameters
 ###=======================================================================
