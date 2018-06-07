@@ -1,14 +1,4 @@
-library(htmlTable)
-#Kevin is modyfing this file now.
-#kevin is modyfing the code
 
-<<<<<<< HEAD
-#We are testing git/gitgub
-=======
-
-#Alan added a few lines...
-
->>>>>>> 87f2daad595938cde024d422b12d5c0ada8086b2
 ###=======================================================================
 ### Parameters
 ###=======================================================================
@@ -121,10 +111,12 @@ for (i in 1:time_end)
   plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
   plant_all <- cbind(plant_all, plant_mat_sum)
   
-#  print(sum(plant_mat[12:17]))
-  
 }
 
+
+###===========================================================================
+### Plotting
+###===========================================================================
 par(mar=c(5,4,1,1),oma=c(0,0,0,0))
 plot(agouti_vec/5200,xlab="",ylab="Population size/Max size", col="brown", ylim=c(0,1.5), type="l",xlim=c(1,time_end),xaxs="i")
 lines(plant_all[1,]/5000, col="forestgreen")
@@ -134,3 +126,4 @@ legend("bottomleft", c("Animal","Adult","Sapling","Seedling"),col=c("brown","ora
 mtext("Time step", 1, line=1.85, at=25, col="black")
 axis(1,1:time_end,labels=toupper( substr(harvest_seq,1,1) ),line=2,col=NA,col.ticks=NA,col.axis="black", cex.axis=0.65)
 mtext("Harvest:",1,line=3,at=-2.5,col="black")
+###===========================================================================
