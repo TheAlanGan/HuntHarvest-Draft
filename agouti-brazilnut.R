@@ -4,23 +4,25 @@
 ###=======================================================================
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees
 highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees
-agoutiGrowth <- 0.18 # Growth rate of Agoutis in logistic model
+agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
 
 lowHunting <- 0.1 # Percentage of agoutis hunted during LOW hunting
 highHunting <- 0.25 # Percentage of agoutis hunted during HIGH hunting
-
-seedlingInit <- 5000 # Initial Populations
-saplingInit <- 500
-adultInit <- 100
-agoutiInit <- 5200
 
 seedlingCapacity <- 5000 # Carrying Capacities
 saplingCapacity <- 500
 adultCapacity <- 100
 agoutiCapacity <- 5200
 
-agouti_to_PlantSteepness <- -(log(1-0.05)-log(0.05))/((0.05-0.5)*agoutiCapacity)
-plant_to_AgoutiSteepness <- -(log(1-0.05)-log(0.05))/((0.05-0.5)*adultCapacity)
+seedlingInit <- 5000 # Initial Populations
+saplingInit <- 500
+adultInit <- 100
+agoutiInit <- 5200
+
+m <- 0.1    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
+agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
+plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
+#This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
 time_end <- 1000 # Length of simulation in years
 
@@ -64,10 +66,11 @@ LogisticGrowthHunt <- function(R, N, K, H, p)
 ###=====================================================================
 
 
-library(markovchain)
+
 ###====================================================================
 ### Harvest markov chain
 ###====================================================================
+library(markovchain)
 # Specifying the markov chain
 statesNames = c("low","high")
 mcHarvest <- new("markovchain", states = statesNames, 
@@ -119,8 +122,9 @@ for (i in 1:time_end)
   #Summing the stages into 3 categories for better plotting
   plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
   plant_all <- cbind(plant_all, plant_mat_sum)
-  
 }
+###===========================================================================
+
 
 
 ###===========================================================================
