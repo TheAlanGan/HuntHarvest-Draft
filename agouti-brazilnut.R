@@ -2,8 +2,8 @@
 ###=======================================================================
 ### Parameters
 ###=======================================================================
-highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees
-highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees
+highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
+highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
 agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
 
 lowHunting <- 0.1 # Percentage of agoutis hunted during LOW hunting
