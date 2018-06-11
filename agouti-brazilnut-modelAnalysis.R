@@ -155,6 +155,43 @@ plot(seq(0,100,interval), domEigenvals, xlab ='Percent Harvest', ylab = 'Dominan
 ###===========================================================================
 
 
+
+###===========================================================================
+### Sensitivity Matrix
+###===========================================================================
+matrix1 <- plant_S_mat
+eigvals <- eigen(matrix1)$values
+eigvecs <- eigen(matrix1)$vectors
+W <- eigvecs
+
+sensMat <- matrix(0, nrow = nrow(matrix1), ncol = ncol(matrix1))
+diag(sensMat) <- c(eigvals)
+
+count <- 0
+for (i in eigvals)
+{
+  count <- count + 1
+  
+  if (dominant <= sqrt(Re(i*Conj(i))))
+  {
+    dominant <- max(sqrt(Re(i*Conj(i))), dominant)
+    finalCount <- count
+  }
+}
+
+V <- Conj(solve(W))
+w <- matrix(W[,finalCount])
+v <- matrix(Re(V[finalCount,]))
+
+sensMat <- Re(v %*% t(w))
+
+
+
+###===========================================================================
+
+
+
+
 #Perturbation Analysis ideas:
 #   plot agouti population sequence on top of each other given different harvest rates
 #   plot tree population sequence on top of each other give different harvest rates
