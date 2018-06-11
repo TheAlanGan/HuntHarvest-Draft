@@ -19,13 +19,16 @@ saplingInit <- 500
 adultInit <- 100
 agoutiInit <- 5200
 
-m <- 0.1    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
+m <- 0.0001    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 1000 # Length of simulation in years
+time_end <- 400 # Length of simulation in years
 
+# For linear functional form
+m <- 1/agoutiCapacity
+b <- 0
 #=========================================================================
 
 
@@ -45,6 +48,39 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 
 
 
+###===========================================================================
+### Eigenvalues vs. Population of Agoutis
+###===========================================================================
+domEigenvals = c()
+num <- 1
+interval <- 10 # 1720 is point at which eig ~= 1
+for (i in seq(0,5200,interval))
+{
+  plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+  plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, i)
+#  plant_animal_mat[1,12:17] <- linear(m, i, b)
+  plant_matrix <- plant_animal_mat * plant_mat_low
+  
+  eigenvals <- eigen(plant_matrix)$values
+  
+  dominant <- 0
+  for (i in eigenvals)
+  {
+    dominant <- max(sqrt(Re(i*Conj(i))), dominant)
+  }
+  domEigenvals[num] <- dominant
+  
+  num <- num + 1
+}
+
+plot(seq(0,5200,interval), domEigenvals)
+# 1720 is point at which eig ~= 1
+# 0.42806 times the carrying capacity (p = 0.42806) is where dN/dt ~= 0 when N = 1720. N is pop of agouti
+#
+###===========================================================================
+
+
+
 ###====================================================================
 ### Plant and animal dynamics under harvest
 ###====================================================================
@@ -57,6 +93,12 @@ sigmoid <- function(k, x0, x)
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
 } # plant_animal <- matrix(c(1,1,sigmoid(1, K_animal*0.5, N),1,1,1,1,1,1), nrow=3, byrow=T)
 # Animal
+
+linear <- function(m, x, b)
+{
+  y <- m*x + b
+  return(y)
+}
 
 LogisticGrowthHunt <- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
@@ -117,6 +159,7 @@ for (i in 1:time_end)
   agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
   plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
   plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+#  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
   plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
   
   #Summing the stages into 3 categories for better plotting
@@ -140,3 +183,5 @@ mtext("Time step", 1, line=1.85, at=25, col="black")
 axis(1,1:time_end,labels=toupper( substr(harvest_seq,1,1) ),line=2,col=NA,col.ticks=NA,col.axis="black", cex.axis=0.65)
 mtext("Harvest:",1,line=3,at=-2.5,col="black")
 ###===========================================================================
+
+
