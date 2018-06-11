@@ -19,7 +19,7 @@ saplingInit <- 500
 adultInit <- 100
 agoutiInit <- 5200
 
-m <- 0.0001    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
+m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
@@ -53,7 +53,7 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 ###===========================================================================
 domEigenvals = c()
 num <- 1
-interval <- 10 # 1720 is point at which eig ~= 1
+interval <- 100 # 1720 is point at which eig ~= 1
 for (i in seq(0,5200,interval))
 {
   plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
@@ -74,9 +74,21 @@ for (i in seq(0,5200,interval))
 }
 
 plot(seq(0,5200,interval), domEigenvals)
-# 1720 is point at which eig ~= 1
-# 0.42806 times the carrying capacity (p = 0.42806) is where dN/dt ~= 0 when N = 1720. N is pop of agouti
-#
+# 1714 is point at which eig ~= 1, at m = 0.0001
+# 0.4265611 times the carrying capacity (p = 0.42806) is where dN/dt ~= 0 when N = 1714. N is pop of agouti
+# Since p is bounded between 0.9 and 1, it is impossible for  system to die
+
+# 103 is the point at which eig ~= 1, at m = 0.05
+# 0.02563348 times the carrying capacity (of agoutis) is inflection point
+# Since p is bounded between 0.9 and 1, it is impossible for system to die
+
+for (i in 1:length(domEigenvals))
+{
+  if (domEigenvals[i] >= 1 && domEigenvals[i] <= 1.0001)
+  {
+    print(i)
+  }
+}
 ###===========================================================================
 
 
