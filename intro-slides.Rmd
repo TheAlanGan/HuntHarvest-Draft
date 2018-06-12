@@ -45,6 +45,7 @@ knitr::opts_chunk$set(echo = FALSE)
 - Implicit in that previous model is a key assumption: *all individuals in a population contribute equally to growth* (or equivalently, decline)
 - Yet many species exhibit strong age- or size-dependent reproduction and survivorship effects.
 - That is, they fall into **categories**
+- Beneficial resources: [Cory Merow](https://cmerow.github.io/RDataScience/20_Intro_Demography.html) and [Kevin Shoemaker](https://naes.unr.edu/shoemaker/teaching/NRES-470/LAB4.html)
 
 ## Age and stage structure {.smaller}
 
