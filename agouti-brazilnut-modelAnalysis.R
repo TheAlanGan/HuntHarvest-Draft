@@ -1,3 +1,4 @@
+### This Code does not run simulations and is only for the analysis of the model from agout-brazilnut.R
 
 ###=======================================================================
 ### Parameters
@@ -9,7 +10,7 @@ agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
 lowHunting <- 0.1 # Percentage of agoutis hunted during LOW hunting
 highHunting <- 0.25 # Percentage of agoutis hunted during HIGH hunting
 
-seedlingCapacity <- 5000 # Carrying Capacities
+seedlingCapacity <- 5000 # Carrying Capacities. Tree capacities don't matter as much.
 saplingCapacity <- 500
 adultCapacity <- 100
 agoutiCapacity <- 5200
@@ -17,7 +18,7 @@ agoutiCapacity <- 5200
 seedlingInit <- 5000 # Initial Populations
 saplingInit <- 500
 adultInit <- 100
-agoutiInit <- 5200
+agoutiInit <- 5000
 
 m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
@@ -159,32 +160,41 @@ plot(seq(0,100,interval), domEigenvals, xlab ='Percent Harvest', ylab = 'Dominan
 ###===========================================================================
 ### Sensitivity Matrix
 ###===========================================================================
-matrix1 <- plant_S_mat
-eigvals <- eigen(matrix1)$values
-eigvecs <- eigen(matrix1)$vectors
-W <- eigvecs
-
-sensMat <- matrix(0, nrow = nrow(matrix1), ncol = ncol(matrix1))
-diag(sensMat) <- c(eigvals)
-
-count <- 0
-for (i in eigvals)
+sensitivity_matrix <- function(matrix1)
 {
-  count <- count + 1
+  eigvals <- eigen(matrix1)$values
+  eigvecs <- eigen(matrix1)$vectors
+  W <- eigvecs
   
-  if (dominant <= sqrt(Re(i*Conj(i))))
+  sensMat <- matrix(0, nrow = nrow(matrix1), ncol = ncol(matrix1))
+  diag(sensMat) <- c(eigvals)
+  
+  count <- 0
+  for (i in eigvals)
   {
-    dominant <- max(sqrt(Re(i*Conj(i))), dominant)
-    finalCount <- count
+    count <- count + 1
+    
+    if (dominant <= sqrt(Re(i*Conj(i))))
+    {
+      dominant <- max(sqrt(Re(i*Conj(i))), dominant)
+      finalCount <- count
+    }
   }
+  
+  V <- Conj(solve(W)) # solve finds inverse matrix
+  w <- matrix(W[,finalCount])
+  v <- matrix(Re(V[finalCount,]))
+  
+  sensMat <- Re(v %*% t(w))
+  
+  elasMat <- (sensMat * matrix1) / dominant
+  
+  ((matrix(Re(eigvecs[,finalCount]) * -1)) / norm(matrix(Re(eigvecs[,finalCount]) * -1))) # Stable age distribution
+  
+  return(sensMat)
 }
 
-V <- Conj(solve(W))
-w <- matrix(W[,finalCount])
-v <- matrix(Re(V[finalCount,]))
-
-sensMat <- Re(v %*% t(w))
-
+sensMat <- sensitivity_matrix(plant_S_mat)
 
 
 ###===========================================================================
@@ -195,7 +205,7 @@ sensMat <- Re(v %*% t(w))
 #Perturbation Analysis ideas:
 #   plot agouti population sequence on top of each other given different harvest rates
 #   plot tree population sequence on top of each other give different harvest rates
-#   
+#   Sensitivity of each matrix element as a matrix heatmap
 
 
 

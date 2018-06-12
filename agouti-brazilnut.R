@@ -17,7 +17,7 @@ agoutiCapacity <- 5200
 seedlingInit <- 5000 # Initial Populations
 saplingInit <- 500
 adultInit <- 100
-agoutiInit <- 5200
+agoutiInit <- 5000
 
 m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
