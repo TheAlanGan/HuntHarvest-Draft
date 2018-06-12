@@ -1,6 +1,5 @@
 ### This Code does not run simulations and is only for the analysis of the model from agout-brazilnut.R
 
-
 ###=======================================================================
 ### Parameters
 ###=======================================================================
@@ -23,12 +22,17 @@ saplingInit <- perc * saplingCapacity#500
 adultInit <- perc * adultCapacity#100
 agoutiInit <- perc * agoutiCapacity#5000
 
+seedlingInit <- 5000 # Initial Populations
+saplingInit <- 500
+adultInit <- 100
+agoutiInit <- 5000
+
 m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 1000 # Length of simulation in years
+time_end <- 500 # Length of simulation in years
 
 # For linear functional form
 m <- 1/agoutiCapacity
@@ -94,7 +98,6 @@ set.seed(100)
 harvest_seq <- rmarkovchain(n=time_end, object = mcHarvest, t0="low")
 head(harvest_seq)
 ###====================================================================
-
 
 
 
@@ -763,6 +766,8 @@ PlotCloud <- function(simdata){
 ###===========================================================================
 
 
+
+###===========================================================================
 
 #Perturbation Analysis ideas:
 #   plot agouti population sequence on top of each other given different harvest rates
