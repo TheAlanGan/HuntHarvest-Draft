@@ -1,5 +1,6 @@
 ### This Code does not run simulations and is only for the analysis of the model from agout-brazilnut.R
 
+
 ###=======================================================================
 ### Parameters
 ###=======================================================================
@@ -14,11 +15,13 @@ seedlingCapacity <- 5000 # Carrying Capacities. Tree capacities don't matter as 
 saplingCapacity <- 500
 adultCapacity <- 100
 agoutiCapacity <- 5200
+perc <- 0.9
+ylimit <- 1 # For plotting
 
-seedlingInit <- 5000 # Initial Populations
-saplingInit <- 500
-adultInit <- 100
-agoutiInit <- 5000
+seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
+saplingInit <- perc * saplingCapacity#500
+adultInit <- perc * adultCapacity#100
+agoutiInit <- perc * agoutiCapacity#5000
 
 m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
@@ -74,6 +77,24 @@ LogisticGrowthHunt <- function(R, N, K, H, p)
   return(Nnext)
 } # some proportion of N_t are harvested
 ###=====================================================================
+
+
+
+###====================================================================
+### Harvest markov chain
+###====================================================================
+library(markovchain)
+# Specifying the markov chain
+statesNames = c("low","high")
+mcHarvest <- new("markovchain", states = statesNames, 
+                 transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
+                                           nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
+# Simulating a discrete time process for harvest
+set.seed(100)
+harvest_seq <- rmarkovchain(n=time_end, object = mcHarvest, t0="low")
+head(harvest_seq)
+###====================================================================
+
 
 
 
@@ -405,7 +426,7 @@ sens_agouti_hunt <- function()
   
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
   
-  plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,4), type="l",xlim=c(1,time_end),xaxs="i")
+  plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,ylimit), type="l",xlim=c(1,time_end),xaxs="i")
   
   for (j in seq(0,100,10)) 
   {
@@ -453,6 +474,9 @@ sens_agouti_hunt <- function()
     
     lines(agouti_vec/agoutiCapacity, col='orange') # Just looking at agouti and adult tree population
     lines(plant_all[3,]/adultCapacity, col='forestgreen')
+#    lines(plant_all[2,]/saplingCapacity, col='turquoise3')
+#    lines(plant_all[1,]/seedlingCapacity, col='brown')
+    
   }
   
   par(mar=c(5,4,1,1),oma=c(0,0,0,0))
@@ -547,11 +571,124 @@ sens_agouti_growth <- function()
   #mtext("Harvest:",1,line=3,at=-2.5,col="black")
 }
 
-sens_agouti_growth()
+#sens_agouti_growth()
 
 ###===========================================================================
 
 
+
+
+###===========================================================================
+### PopBio Analysis
+###===========================================================================
+
+lambda_sim <- function()
+{
+  brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
+  
+  ### Part 1: Inspect the leading eigenvalue for each individual matrix
+  lambdas <- lapply(brazilNut, lambda) # "List apply": similar in spirit to python's mapply; applies a function over each element in a list or vector
+  lambdas # Note that 1985 and 1987 are "bad" years
+  
+  ### Part 2: Calculating stochastic growth rate under different probabilities
+  # of observing each transition matrix.
+  ## 2.A: Equal probabilities
+  sgr1 <- stoch.growth.rate(brazilNut, prob=rep(0.50, 2)) # equal probabilities of all years
+  sgr1 # note that $approx returns Tuljapurkar's approximation of log-lambda and $sim gives you a simulated estimate
+  # To extract the true lambdas:
+  exp(sgr1$approx)
+  exp(sgr1$sim)
+}
+
+#lambda_sim()
+
+###===========================================================================
+
+
+VertebratePVA <- function(reps) {
+  
+  nrun <- function() 
+  {
+    
+    statesNames = c("low","high")
+    mcHarvest <- new("markovchain", states = statesNames, 
+                     transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
+                                               nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
+#    set.seed(100)
+    harvest_seq <- rmarkovchain(n=time_end, object = mcHarvest, t0="low")
+    
+    
+    plant_mat <- matrix(0, nrow = 17)
+    plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+    plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+    plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+    agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+    
+    plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+    
+    
+    for (i in 1:time_end) 
+    {
+      h_i <- harvest_seq[i]
+      
+      if (h_i == "low") 
+      {
+        pmat <- plant_mat_low
+        h_off <- lowHunting
+      } 
+      
+      else 
+      {
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      }
+      
+      p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+      agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+      plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+      plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+      #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+      plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+      
+      #Summing the stages into 3 categories for better plotting
+      plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
+      plant_all <- cbind(plant_all, plant_mat_sum)
+      
+    }
+    return(plant_all[3,])  # PVA for adult trees
+#   return(agouti_vec)      #PVA for agoutis
+  }
+  
+  PopMat <- replicate(reps,
+                      nrun())
+  
+  
+  return(list(Nmat=PopMat, # matrix of population sizes over time
+              Nend=PopMat[time_end,] # final population size
+              ))
+}
+
+PlotCloud <- function(simdata){
+  # From Kevin Shoemaker: http://naes.unr.edu/shoemaker/teaching/NRES-470/LECTURE12.html#step_4:_simulate
+  
+  # Visualize population trends
+  plot(c(1:nrow(simdata)),simdata[,1],col=gray(0.7),type="l",ylim=c(0,max(simdata)),xlab="Years",ylab="Abundance")
+  
+  for(r in 2:ncol(simdata)){
+    lines(c(1:nrow(simdata)),simdata[,r],col=gray(0.7),type="l")
+  }
+}
+
+### Running the functions
+#PVAruns <- VertebratePVA(100)
+
+### Visualize the different runs
+#PlotCloud(PVAruns$Nmat)
+
+
+
+
+###===========================================================================
 
 
 
