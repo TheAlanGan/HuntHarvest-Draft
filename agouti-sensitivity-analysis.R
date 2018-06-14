@@ -582,6 +582,7 @@ sens_agouti_growth <- function()
 ### PopBio Analysis
 ###===========================================================================
 
+# Stochastic growth rate
 lambda_sim <- function()
 {
   brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
@@ -590,20 +591,93 @@ lambda_sim <- function()
   lambdas <- lapply(brazilNut, lambda) # "List apply": similar in spirit to python's mapply; applies a function over each element in a list or vector
   lambdas # Note that 1985 and 1987 are "bad" years
   
-  ### Part 2: Calculating stochastic growth rate under different probabilities
-  # of observing each transition matrix.
-  ## 2.A: Equal probabilities
   sgr1 <- stoch.growth.rate(brazilNut, prob=rep(0.50, 2)) # equal probabilities of all years
   sgr1 # note that $approx returns Tuljapurkar's approximation of log-lambda and $sim gives you a simulated estimate
   # To extract the true lambdas:
   exp(sgr1$approx)
   exp(sgr1$sim)
+  
+  return(exp(sgr1$sim))
 }
 
-#lambda_sim()
+growth_rate1 <- lambda_sim() #Does not take into account the agoutis' effect of plants (assumes max agouti population)
+
+
+
+# Improved Stochastic Growth Rate. (Takes agoutis into account)
+maxt <- 50000
+brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
+
+stoch_growth <- function()
+{
+  r <- numeric(maxt)
+  
+  plant_mat <- matrix(0, nrow = 17)
+  
+  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+  
+  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+  
+  plant_mat <- plant_mat / sum(plant_mat)
+  
+  statesNames = c("low","high")
+  mcHarvest <- new("markovchain", states = statesNames, 
+                   transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
+                                             nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
+  # Simulating a discrete time process for harvest
+  set.seed(100)
+  harvest_seq <- rmarkovchain(n=maxt, object = mcHarvest, t0="low")
+  
+  for (i in 1:maxt)
+  {
+    h_i <- harvest_seq[i]
+    
+    if (h_i == "low") 
+    {
+      pmat <- plant_mat_low
+      h_off <- lowHunting
+    } 
+    
+    else 
+    {
+      pmat <- plant_mat_high
+      h_off <- highHunting
+    }
+    
+    p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+    agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+    plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+    plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+    
+    #Summing the stages into 3 categories for better plotting
+    plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
+    plant_all <- cbind(plant_all, plant_mat_sum)
+    
+    N <- sum(plant_mat)
+    r[i] <- log(N)
+    plant_mat <- plant_mat / N
+  }
+  
+  loglambsim <- mean(r)
+  
+  return(loglambsim)
+}
+
+growth_rate <- exp(stoch_growth())
+print(growth_rate)
 
 ###===========================================================================
 
+
+
+###===========================================================================
+### Population Viability Analysis
+###===========================================================================
 
 VertebratePVA <- function(reps) {
   
@@ -617,7 +691,6 @@ VertebratePVA <- function(reps) {
 #    set.seed(100)
     harvest_seq <- rmarkovchain(n=time_end, object = mcHarvest, t0="low")
     
-    
     plant_mat <- matrix(0, nrow = 17)
     plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
     plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
@@ -625,7 +698,6 @@ VertebratePVA <- function(reps) {
     agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
     
     plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
-    
     
     for (i in 1:time_end) 
     {
