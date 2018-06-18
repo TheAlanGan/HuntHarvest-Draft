@@ -30,9 +30,9 @@ agoutiInit <- 5000
 m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
-#This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
+#This formula above is deriv2ed from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 1000 # Length of simulation in years
+time_end <- 10000 # Length of simulation in years
 
 # For linear functional form
 m <- 1/agoutiCapacity
@@ -194,7 +194,7 @@ eigvals_vs_harvest <- function()
 ### Eigenvalues vs. Adult Survival
 ###===========================================================================
 # This is only for harvest relating to the fecundity of the trees.
-eigvals_vs_harvest <- function()
+eigvals_vs_survival <- function()
 {
   domEigenvals = c()
   num <- 1
@@ -203,7 +203,7 @@ eigvals_vs_harvest <- function()
   for (i in seq(0,100,interval))
   {
     
-    high_harv[cbind(12:17,12:17)] <- 1-i/100    # Multiplier for fecundity rate for Adult trees
+    high_harv[cbind(12:17,12:17)] <- i/100    # Multiplier for fecundity rate for Adult trees
     plant_mat_high <- plant_S_mat * high_harv
     
     eigenvals <- eigen(plant_mat_high)$values
@@ -218,10 +218,10 @@ eigvals_vs_harvest <- function()
     num <- num + 1
   }
   
-  plot(seq(0,100,interval), domEigenvals, xlab ='Percent Harvest', ylab = 'Dominant Eigenvalue')
+  plot(seq(0,100,interval), domEigenvals, xlab ='Adult Survival', ylab = 'Dominant Eigenvalue')
 }
 
-#eigvals_vs_harvest()
+#eigvals_vs_survival()
 
 ###===========================================================================
 
@@ -370,7 +370,7 @@ sens_percent_harvest <- function()
   #mtext("Harvest:",1,line=3,at=-2.5,col="black")
 }
 
-sens_percent_harvest()
+#sens_percent_harvest()
 
 ###===========================================================================
 
@@ -623,6 +623,171 @@ sens_agouti_growth <- function()
 
 ###===========================================================================
 
+
+
+###====================================================================
+### Sensitivity Analysis of Agouti Carrying Capacity (Under purely High Harvests)
+###====================================================================
+sens_agouti_capacity <- function()
+{
+  plant_mat <- matrix(0, nrow = 17)
+  
+  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+  
+  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+  
+  plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,1), type="l",xlim=c(1,time_end),xaxs="i")
+  
+  for (j in seq(1000,5200,200)) 
+  {
+    
+    agoutiCapacity <- j
+    agoutiInit <- j * .77
+    
+    plant_mat <- matrix(0, nrow = 17)
+    
+    plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+    plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+    plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+    agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+    
+    plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+    
+    for (i in 1:time_end) 
+    {
+      h_i <- harvest_seq[i]
+      
+      if (h_i == "low") 
+      {
+        #pmat <- plant_mat_low
+        #h_off <- lowHunting
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      } 
+      
+      else 
+      {
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      }
+      
+      p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+      agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+      plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+      plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+      #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+      plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+      
+      #Summing the stages into 3 categories for better plotting
+      plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
+      plant_all <- cbind(plant_all, plant_mat_sum)
+    }
+    
+    lines(agouti_vec/agoutiCapacity, col='orange')
+    lines(plant_all[3,]/adultCapacity, col='forestgreen')
+  }
+  
+  par(mar=c(5,4,1,1),oma=c(0,0,0,0))
+  #plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,10), type="l",xlim=c(1,time_end),xaxs="i")
+  #lines(plant_all[1,]/seedlingCapacity, col="forestgreen")
+  #lines(plant_all[2,]/saplingCapacity, col="turquoise3")
+  #lines(plant_all[3,]/adultCapacity, col="orange")
+  #legend("bottomleft", c("Animal","Adult","Sapling","Seedling"),col=c("brown","orange","turquoise3","forestgreen"),lty=c(1,1,1,1), bty="n",ncol=2)
+  #mtext("Time step", 1, line=1.85, at=25, col="black")
+  #axis(1,1:time_end,labels=toupper( substr(harvest_seq,1,1) ),line=2,col=NA,col.ticks=NA,col.axis="black", cex.axis=0.65)
+  #mtext("Harvest:",1,line=3,at=-2.5,col="black")
+}
+
+#sens_agouti_capacity()
+
+###===========================================================================
+
+
+
+###====================================================================
+### Sensitivity Analysis of Initial Population (Under purely High Harvests)
+###====================================================================
+sens_init_pop <- function()
+{
+  plant_mat <- matrix(0, nrow = 17)
+  
+  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+  
+  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+  
+  plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,ylimit), type="l",xlim=c(1,time_end),xaxs="i")
+  
+  for (j in seq(0,20,1)) 
+  {
+    perc <- j/100
+    seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
+    saplingInit <- perc * saplingCapacity#500
+    adultInit <- perc * adultCapacity#100
+    agoutiInit <- perc * agoutiCapacity#5000
+    
+    plant_mat <- matrix(0, nrow = 17)
+    plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+    plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+    plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+    agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+    
+    plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+    
+    for (i in 1:time_end) 
+    {
+      h_i <- harvest_seq[i]
+      
+      if (h_i == "low") 
+      {
+        #pmat <- plant_mat_low
+        #h_off <- lowHunting
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      } 
+      
+      else 
+      {
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      }
+      
+      p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+      agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+      plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+      plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+      #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+      plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+      
+      #Summing the stages into 3 categories for better plotting
+      plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
+      plant_all <- cbind(plant_all, plant_mat_sum)
+    }
+    
+    lines(agouti_vec/agoutiCapacity, col='orange') # Just looking at agouti and adult tree population
+    lines(plant_all[3,]/adultCapacity, col='forestgreen')
+    #    lines(plant_all[2,]/saplingCapacity, col='turquoise3')
+    #    lines(plant_all[1,]/seedlingCapacity, col='brown')
+    
+  }
+  
+  par(mar=c(5,4,1,1),oma=c(0,0,0,0))
+  #plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,10), type="l",xlim=c(1,time_end),xaxs="i")
+  #lines(plant_all[1,]/seedlingCapacity, col="forestgreen")
+  #lines(plant_all[2,]/saplingCapacity, col="turquoise3")
+  #lines(plant_all[3,]/adultCapacity, col="orange")
+  #legend("bottomleft", c("Animal","Adult","Sapling","Seedling"),col=c("brown","orange","turquoise3","forestgreen"),lty=c(1,1,1,1), bty="n",ncol=2)
+  #mtext("Time step", 1, line=1.85, at=25, col="black")
+  #axis(1,1:time_end,labels=toupper( substr(harvest_seq,1,1) ),line=2,col=NA,col.ticks=NA,col.axis="black", cex.axis=0.65)
+  #mtext("Harvest:",1,line=3,at=-2.5,col="black")
+}
+
+sens_init_pop()
 
 
 
