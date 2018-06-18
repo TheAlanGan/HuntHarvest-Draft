@@ -1,4 +1,16 @@
 ###========================================================================
+### Extracting population projection matrices for animals from COMADRE
+###========================================================================
+# Download the COMADRE RDATA file here: https://www.compadre-db.org/Data/Comadre
+# COMPADRE is plant database
+load("~/Downloads/COMADRE_v.2.0.1.RData") # the path may be different for you
+sort(unique(comadre$metadata$SpeciesAccepted)) # full list of species in COMADRE
+grep("Cebus", comadre$metadata$SpeciesAccepted, ignore.case=T)
+
+comadre$metadata[996,] # Metadata on one of the capuchin monkey entries
+comadre$mat[[996]] # comadre$mat is a list of matrices with up to 4 for each observation
+
+###========================================================================
 ### Overview of stochastic growth rate calculation in 'popbio'
 ###========================================================================
 
