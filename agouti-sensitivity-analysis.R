@@ -191,6 +191,43 @@ eigvals_vs_harvest <- function()
 
 
 ###===========================================================================
+### Eigenvalues vs. Adult Survival
+###===========================================================================
+# This is only for harvest relating to the fecundity of the trees.
+eigvals_vs_harvest <- function()
+{
+  domEigenvals = c()
+  num <- 1
+  interval <- .25
+  
+  for (i in seq(0,100,interval))
+  {
+    
+    high_harv[cbind(12:17,12:17)] <- 1-i/100    # Multiplier for fecundity rate for Adult trees
+    plant_mat_high <- plant_S_mat * high_harv
+    
+    eigenvals <- eigen(plant_mat_high)$values
+    
+    dominant <- 0
+    for (i in eigenvals)
+    {
+      dominant <- max(sqrt(Re(i*Conj(i))), dominant)
+    }
+    domEigenvals[num] <- dominant
+    
+    num <- num + 1
+  }
+  
+  plot(seq(0,100,interval), domEigenvals, xlab ='Percent Harvest', ylab = 'Dominant Eigenvalue')
+}
+
+#eigvals_vs_harvest()
+
+###===========================================================================
+
+
+
+###===========================================================================
 ### Sensitivity Matrix
 ###===========================================================================
 sensitivity_matrix <- function(A)
@@ -319,7 +356,7 @@ sens_percent_harvest <- function()
       plant_all <- cbind(plant_all, plant_mat_sum)
     }
     
-    lines(plant_all[3,]/adultCapacity, col='blue')
+    lines(plant_all[3,]/adultCapacity, col='forestgreen')
   }
   
   par(mar=c(5,4,1,1),oma=c(0,0,0,0))
@@ -769,24 +806,10 @@ PlotCloud <- function(simdata){
 ### Visualize the different runs
 #PlotCloud(PVAruns$Nmat)
 
-
-
-
 ###===========================================================================
 
 
 
-###===========================================================================
-
-
-
-
-
-
-#Perturbation Analysis ideas:
-#   plot agouti population sequence on top of each other given different harvest rates
-#   plot tree population sequence on top of each other give different harvest rates
-#   Sensitivity of each matrix element as a matrix heatmap
 
 
 
