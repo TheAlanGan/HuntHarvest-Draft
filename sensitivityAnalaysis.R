@@ -10,7 +10,7 @@
 #devtools::install_github("ropensci/plotly") 
 #devtools::install_github('talgalili/heatmaply')
 #devtools::install_github('spedygiorgio/markovchain')
-#library("ggplot2")
+library("ggplot2")
 #library("heatmaply")
 #remove.packages("ggplot2")
 #install.packages("ggplot2")
@@ -58,7 +58,72 @@ plant_mat_low <- plant_S_mat
 plant_mat_high <- plant_S_mat * high_harv
 
 
+#===========================================================================
+### Additional parameter values
+#===========================================================================
 
+### We will use Lamont Cole (1954)'s equation to calculate different ranges of rMax for species
+
+amniote <- read.csv("~/Google Drive/Data/Indicator/Amniote/Amniote_Database_Aug_2015.csv", header=T, stringsAsFactors = FALSE) # global data base on traits for many mammals, birds, and some reptiles
+amniote$Latin <- trimws(paste(amniote$genus, amniote$species)) # have to create a Latin name field
+rmNAs <- function(x) {ifelse(x==-999, NA, x)} # many databases code missing values as -999 which is annoying
+cole <- function(r) { exp(-r) + b*exp(-r*a) - b*exp(-r*(w+1)) -1} # Cole (1954) equation for r-max
+find.mass <- function(x) {
+  mass.vec <- rmNAs(amniote$adult_body_mass_g[match(x, amniote$Latin)])
+  names(mass.vec) <- x
+  return(mass.vec)
+}
+
+example_species <- c("Tapirus terrestris","Cuniculus paca","Cebus apella","Buceros rhinoceros","Ramphastos toco")
+
+# 1: Indices for extracting values from amniote
+inds <- match(example_species, amniote$Latin)
+
+# 2A: Getting values for Cole 1954: Age at first reproduction
+  # Amniote AFR is in days (convert to months)
+  # Convert -999 to NAs at the same time
+a.cole <- rmNAs(amniote$female_maturity_d[inds])/30     # AFR from Amniote
+
+# 2B: Cole 1954: Litter size
+b.cole <- rmNAs(amniote$litter_or_clutch_size_n[inds])
+
+# 2C: Cole 1954: age at last reproduction (w) (interpreted as longevity)
+w.cole <- rmNAs(amniote$longevity_y[inds])*12
+
+# 3: Body masses
+BMs <- find.mass(example_species)
+
+## 4: Using "multiroot" (equivalent to python fsolve) to find Cole's r_max 
+rcole <- c(); r.spp <- c(); cmass <- c()
+# NB: a and w have to be in years^-1; b = b/2 for females only
+for (i in 1:length(a.cole)) {
+  a<-a.cole[i]/12; b<-b.cole[i]/2; w<-w.cole[i]/12
+  if (!is.na(a) & !is.na(b) & !is.na(w)) {
+    rcole <- append(rcole, rootSolve::multiroot(cole,0.5, maxiter=10000, atol=10^-16)$root, after=length(rcole))
+    r.spp <- append(r.spp, example_species[i], after=length(r.spp))
+    cmass <- append(cmass, BMs[i], after=length(cmass))
+  }
+}
+
+rmaxdf <- data.frame(Species=r.spp,
+                     rMax = rcole,
+                     BM_kg = as.numeric(cmass)/1000,
+                     stringsAsFactors = FALSE)
+rmaxdf
+
+### Another way: allometric scaling
+  # Henneman 1983: 4.9*W^-0.2622 # rmax (year-1); rmax (day-1) => 0.0134 * W^-0.2622
+  # Hamilton et al 2011, Proc B, Figure 6: rmax (year^-1) = 10^0.63 (4.3) * W (grams)^-1/3 => rmax (day-1) = 0.0117   W^(-1/3)     # probably least reliable - weird marsupial/placental divide
+  # Fenchel 1974, end of results right before Discussion, rmax (day^-1) = 10^(-1.4)*X^(-0.275) [0.0398 W ^-0.275 for  day-1]
+  # Blueweiss: rmax (day^-1) = 0.025*W^(-0.26) # W is in grams
+  # Sibly and West, 2007, PNAS: Results - all mammal production rate: rmax (yr-1): 0.98*M (grams)^-0.275 => 0.00268 W^-0.275 (day-1)
+rm.pow <- -0.25 # intercept and exponent for rmax - body mass relationship
+rmax_allo <- 0.98*(BMs^rm.pow) # not going to be accurate for birds; need a different intercept
+BMlogs <- log10(BMs/1000)
+
+plot(BMlogs, rmax_allo, pch=19, xlab=expression(paste("Body mass (", log[10]," kgs)")), ylab=expression(r[max]), xlim=c(-0.5,2.5),ylim=c(0,0.5), xaxs="i", yaxs="i")
+points(log10(rmaxdf$BM_kg),rmaxdf$rMax, col="red", pch=19)
+legend("topleft",c("Cole","Allometric"),pch=rep(19,2), col=c("red","black"),bty="n")
 #===========================================================================
 #============FUNCTIONS======================================================
 #===========================================================================
@@ -297,6 +362,40 @@ filled.contour(x = seq(0,1,0.05),
                key.title = title(main = "Growth Rate", cex.main = 0.5))
 
 
+###==========================================================================
+### ggplot heatmap example
+###==========================================================================
+
+growthRatedf <- reshape2::melt(growthRate_mat)
+growthRatedf[,3] <- sample(seq(75,125, by=2.5)/100, replace=T, size=dim(growthRatedf)[1] ) # just to get some values in there without running the simulation
+
+names(growthRatedf) <- c("Germination","AdultSurvival","Lambda") # not sure I got the ordering of these labels right
+
+col.ramp <- c("goldenrod2","#a1dab4","#41b6c4","#2c7fb8","#253494") # create a color ramp; there are also built-in ones in ggplot ?scale_fill_continuous or ?scale_color_gradientn
+
+p <- ggplot(growthRatedf, aes(x=Germination, y=AdultSurvival,fill=Lambda))
+p <- p + geom_raster()
+p <- p + scale_fill_gradientn(name=expression(lambda), colours=col.ramp, breaks=c(0.75,0.875,1,1.125,1.25)) +
+  labs(x="Germination", y=expression(paste("Adult survivorship (", sigma[a], ")"))) +
+  theme_bw() +
+  theme(legend.position="top",text=element_text(size=14),legend.text=element_text(size=11),legend.title=element_text(size=14)) 
+p
+
+### Binary example
+
+growthRatedf$LambdaBin <- ifelse(growthRatedf$Lambda > 1, 2, ifelse(growthRatedf$Lambda==1, 1, 0))
+growthRatedf$LambdaBin <- factor(growthRatedf$LambdaBin, levels=c("0","1","2"), labels=c("Decline","Constant","Increase"))
+
+p <- ggplot(growthRatedf, aes(x=Germination, y=AdultSurvival,fill=LambdaBin))
+p <- p + geom_tile(color="white") # different version of raster, a touch slower, but permits outlines if that is useful
+p <- p + scale_fill_manual(name=expression(paste(lambda," category:")),values = c("grey50","slategray3","darkcyan")) +
+  labs(x="Germination", y=expression(paste("Adult survivorship (", sigma[a], ")"))) +
+  theme_bw() +
+  theme(legend.position="top",text=element_text(size=14),legend.text=element_text(size=11),legend.title=element_text(size=14)) 
+p
+
+# To save a plot to file:
+# ggsave("~/LambdaBinomialAdultGermination.eps",plot=p,width=8, dpi=200, units="in") # or something like that. Can use jpeg, tiff, png, etc. I find jpeg and eps best.
 
 #=====================================================================================================================
 #Growth Rate vs animal Population
