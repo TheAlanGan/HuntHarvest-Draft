@@ -43,6 +43,10 @@ brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
+xseq<-seq(0,1,0.05)
+low_high_huntseq<- seq(0,0.85,0.05)
+
+
 
 ##=======The Original 17-Stage Matrix from Zuidema and high-harvest multiplier
 plant_S_mat <- matrix( 0, nrow = 17, ncol = 17)
@@ -146,6 +150,48 @@ stoch_growth <- function(){
   
   return(loglambsim)
 }
+
+
+stoch_growth_underHighHuntHarv <- function(){
+  r <- numeric(maxt)
+  plant_mat <- matrix(0, nrow = 17)
+  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  
+  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+  
+  plant_mat <- plant_mat / sum(plant_mat)
+  agouti_vec <- c(agoutiInit)
+  
+  markovChain()
+  
+  for (i in 1:maxt)
+  {
+    
+    pmat <- plant_mat_high
+    h_off <- highHunting
+    
+    p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+    agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+    plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+    plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+    
+    #Summing the stages into 3 categories for better plotting
+    plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
+    plant_all <- cbind(plant_all, plant_mat_sum)
+    
+    N <- sum(plant_mat)
+    r[i] <- log(N)
+    plant_mat <- plant_mat / N
+  }
+  
+  loglambsim <- mean(r)
+  
+  return(loglambsim)
+}
 agouti_Abundance<- function(s,m){
   
   plant_mat <- matrix(0, nrow = 17)
@@ -216,19 +262,19 @@ plant_abundance_underHighHunt<- function(highHunting){
 
 growthRate_mat<-matrix(0,21,21)
 binary_mat<- matrix(0,21,21)
-rownames(growthRate_mat) <- paste(seq(0,1,0.01))
-colnames(growthRate_mat) <- paste(seq(0,1,0.01))
+rownames(growthRate_mat) <- paste(xseq)
+colnames(growthRate_mat) <- paste(xseq)
 
-rownames(binary_mat) <- paste(seq(0,1,0.05))
-colnames(binary_mat) <- paste(seq(0,1,0.05))
+rownames(binary_mat) <- paste(xseq)
+colnames(binary_mat) <- paste(xseq)
 
 num<-1 
 num1<-1
-for(i in seq(0,1,0.05))
+for(i in xseq)
 {
   high_harv[1,12:17] <- i # Multiplier for fecundity rate for Adult trees
   num1<-1
-  for(j in seq(0,1,0.05)){
+  for(j in xseq){
 
     high_harv[cbind(12:17,12:17)] <- j # Multiplier for survival rate of Adult trees
     plant_mat_low <- plant_S_mat
@@ -265,7 +311,7 @@ browseURL("heatMaps/heatmaply_plot.png")
 agouti_Growth<- matrix(0, 1, 21)
 agouti_pop<- matrix(0, 1, 21)
 num<-1
-for(i in seq(0,1,0.05))
+for(i in xseq)
   {
     agouti_Growth[num]<- (i)
     agouti_pop[num]<- agouti_Abundance(agouti_Growth[num],1)
@@ -280,7 +326,7 @@ plot(agouti_Growth,agouti_pop, xlab="Proportion of the Growth Rate", ylab="Anima
 agouti_capacity<- matrix(0, 1, 21)
 agouti_pop<- matrix(0, 1, 21)
 num<-1
-for(i in seq(0,1,0.05))
+for(i in xseq)
 {
   agouti_capacity[num]<-(i)
   agouti_pop[num]<- agouti_Abundance(1,agouti_capacity[num])
@@ -300,7 +346,7 @@ adults_hunt_mat<- matrix(0,1,21)
 
 hunting_mat<- matrix(0,1,21)
 num<-1
-for(i in seq(0,1,0.05))
+for(i in xseq)
   {
     hunting_mat[num]<-i 
     seedling_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[1]
@@ -317,11 +363,12 @@ legend(0.1, 5, legend=c("Seedling","Sapling","Adults"),col=c("brown", "black","g
 
 
 #=============================================================================================================================
+#Contour map Germination and adult Survival 
 install.packages("akima")
 library(akima)
 
-filled.contour(x = seq(0,1,0.05),
-              y = seq(0,1,0.05),
+filled.contour(x = xseq,
+              y = xseq,
               z = growthRate_mat,
               color.palette =
                 colorRampPalette(c("white", "blue")),
@@ -329,7 +376,246 @@ filled.contour(x = seq(0,1,0.05),
               ylab = "Germination",
               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
+#=============================================================================================================================#
+#Heatmap projecting variation in hunting and its affect on the adult survival and germination 
+#==============================================================================================================================
+#1) Only high hunting with respect to germination
+growthRate_mat<-matrix(0,length(xseq),length(xseq))
+binary_mat<- matrix(0,length(xseq),length(xseq))
 
+rownames(growthRate_mat) <- paste(xseq)
+colnames(growthRate_mat) <- paste(xseq)
+
+rownames(binary_mat) <- paste(xseq)
+colnames(binary_mat) <- paste(xseq)
+highHunting<-0
+num<-1 
+num1<-1
+
+high_harv[1,12:17] <- highHarvestFecundity 
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
+
+for(i in xseq)
+{
+  high_harv[1,12:17] <- i # Multiplier for fecundity rate for Adult trees
+  num1<-1
+  for(j in xseq){
+    
+    plant_mat_low <- plant_S_mat
+    plant_mat_high <- plant_S_mat * high_harv
+    highHunting<- j
+    growth_rate <- exp(stoch_growth_underHighHuntHarv())
+    growthRate_mat[num,num1]<-growth_rate
+    print(growthRate_mat[num,num1])
+    if(growthRate_mat[num,num1]>1 ||growthRate_mat[num,num1]==1)
+    {
+      binary_mat[num,num1]<-1
+    }
+    else{
+      binary_mat[num,num1]<-0
+    }
+    
+    num1<-num1+1
+  }
+  num<- num+1
+  
+}
+
+library(heatmaply)
+heatmaply(growthRate_mat,Rowv=NA, Colv=NA,xlab = "High Hunting", ylab="Germination")
+heatmaply(binary_mat,Rowv=NA, Colv=NA,xlab = "High Hunting", ylab="Germination")
+library(akima)
+
+filled.contour(x = xseq,
+               y = xseq,
+               z = growthRate_mat,
+               color.palette =
+                 colorRampPalette(c("white", "blue")),
+               xlab = "High Hunting",
+               ylab = "Germination",
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
+
+#======================================================================================================================
+#2 Only High hunting with respect to adult survival
+growthRate_mat<-matrix(0,21,21)
+binary_mat<- matrix(0,21,21)
+rownames(growthRate_mat) <- paste(xseq)
+colnames(growthRate_mat) <- paste(xseq)
+
+rownames(binary_mat) <- paste(xseq)
+colnames(binary_mat) <- paste(xseq)
+
+
+highHunting<-0
+num<-1 
+num1<-1
+
+high_harv[1,12:17] <- highHarvestFecundity 
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
+
+for(i in xseq)
+{
+  high_harv[cbind(12:17,12:17)] <- i # Multiplier for survival rate of Adult trees
+  num1<-1
+  for(j in xseq){
+    
+    plant_mat_low <- plant_S_mat
+    plant_mat_high <- plant_S_mat * high_harv
+    highHunting<- j
+    growth_rate <- exp(stoch_growth_underHighHuntHarv())
+    growthRate_mat[num,num1]<-growth_rate
+    print(growthRate_mat[num,num1])
+    if(growthRate_mat[num,num1]>1 ||growthRate_mat[num,num1]==1)
+    {
+      binary_mat[num,num1]<-1
+    }
+    else{
+      binary_mat[num,num1]<-0
+    }
+    
+    num1<-num1+1
+  }
+  num<- num+1
+  
+}
+
+heatmaply::heatmaply(binary_mat,margins=c(4,4), Rowv=NA, Colv=NA,xlab = "High Hunting", ylab="Adult Survival")
+heatmaply::heatmaply(growthRate_mat,margins = c(4,4), Rowv=NA, Colv=NA,xlab = "High Hunting", ylab="Adult Survival", scale="none")
+
+library(akima)
+
+filled.contour(x = xseq,
+               y = xseq,
+               z = growthRate_mat,
+               color.palette =
+                 colorRampPalette(c("white", "red")),
+               xlab = "High Hunting", ylab="Adult Survival",
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
+
+#============================================================================================================================
+#Heatmap projection of both high and low hunting with respect to adult survival and germination
+#============================================================================================================================
+#Changing both high and low hunting with respect to germination
+low_high_huntseq<- seq(0,0.85,0.05)
+growthRate_mat<-matrix(0,length(low_high_huntseq),length(low_high_huntseq))
+binary_mat<- matrix(0,length(low_high_huntseq),length(low_high_huntseq))
+rownames(growthRate_mat) <- paste(low_high_huntseq)
+colnames(growthRate_mat) <- paste(low_high_huntseq)
+
+rownames(binary_mat) <- paste(low_high_huntseq)
+colnames(binary_mat) <- paste(low_high_huntseq)
+
+highHunting<-0
+lowHunting<-0
+
+num<-1 
+num1<-1
+
+high_harv[1,12:17] <- highHarvestFecundity 
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
+
+for(i in low_high_huntseq)
+{
+  high_harv[1,12:17] <- i # Multiplier for fecundity rate for Adult trees
+  num1<-1
+  for(j in low_high_huntseq){
+    
+    plant_mat_low <- plant_S_mat
+    plant_mat_high <- plant_S_mat * high_harv
+    lowHunting<-j
+    highHunting<- j+0.15
+    growth_rate <- exp(stoch_growth())
+    growthRate_mat[num,num1]<-growth_rate
+    print(growthRate_mat[num,num1])
+    if(growthRate_mat[num,num1]>=1 || is.na(growthRate_mat[num,num1]))
+    {
+      binary_mat[num,num1]<-1
+    }
+    else{
+      binary_mat[num,num1]<-0
+    }
+    
+    num1<-num1+1
+  }
+  num<- num+1
+  
+}
+
+heatmaply::heatmaply(binary_mat,margins=c(4,4), Rowv=NA, Colv=NA,xlab = "Hunting(Low/High)", ylab="Germination")
+heatmaply::heatmaply(growthRate_mat,margins = c(4,4), Rowv=NA, Colv=NA,xlab = "Hunting(Low/High)", ylab="Germination", scale="none")
+
+library(akima)
+
+filled.contour(x = low_high_huntseq,
+               y = low_high_huntseq,
+               z = growthRate_mat,
+               color.palette =
+                 colorRampPalette(c("white", "blue")),
+               xlab = "Hunting(low/high)",
+               ylab = "Germination",
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
+
+#===============================================================================================
+#Changing both high and low hunting with respect to adult survival
+
+growthRate_mat<-matrix(0,length(low_high_huntseq),length(low_high_huntseq))
+binary_mat<- matrix(0,length(low_high_huntseq),length(low_high_huntseq))
+rownames(growthRate_mat) <- paste(low_high_huntseq)
+colnames(growthRate_mat) <- paste(low_high_huntseq)
+
+rownames(binary_mat) <- paste(low_high_huntseq)
+colnames(binary_mat) <- paste(low_high_huntseq)
+
+highHunting<-0
+lowHunting<-0
+num<-1 
+num1<-1
+
+high_harv[1,12:17] <- highHarvestFecundity 
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
+
+for(i in low_high_huntseq)
+{
+  high_harv[cbind(12:17,12:17)] <- i # Multiplier for survival rate of Adult trees
+  num1<-1
+  for(j in low_high_huntseq){
+    plant_mat_low <- plant_S_mat
+    plant_mat_high <- plant_S_mat * high_harv
+    lowHunting<-j
+    highHunting<- j+0.15
+    growth_rate <- exp(stoch_growth())
+    growthRate_mat[num,num1]<-growth_rate
+    print(growthRate_mat[num,num1])
+    if(growthRate_mat[num,num1]<1 || is.na(growthRate_mat[num,num1]))
+    {
+      binary_mat[num,num1]<-0
+    }
+    else{
+      binary_mat[num,num1]<-1
+    }
+    
+    num1<-num1+1
+  }
+  num<- num+1
+  
+}
+
+heatmaply::heatmaply(binary_mat,margins=c(4,4), Rowv=NA, Colv=NA,xlab = "Hunting(Low/High)", ylab="Adult Survival")
+heatmaply::heatmaply(growthRate_mat,margins = c(4,4), Rowv=NA, Colv=NA,xlab = "Hunting(Low/High)", ylab="Adult Survival", scale="none")
+
+library(akima)
+
+filled.contour(x =  low_high_huntseq,
+               y =  low_high_huntseq,
+               z = growthRate_mat,
+               color.palette =
+                 colorRampPalette(c("white", "blue")),
+               xlab = "Hunting(low/high)",
+               ylab = "Adult Survival",
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
+
+
+#=======================================================================================================================
 
 
 
