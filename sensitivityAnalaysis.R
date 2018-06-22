@@ -1,16 +1,19 @@
 ###=======================================================================
 ### Parameters
 ###=======================================================================
-install.packages('heatmaply')
-install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
-install.packages.2('devtools')
+#install.packages('heatmaply')
+#install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
+#install.packages.2('devtools')
 # make sure you have Rtools installed first! if not, then run:
 #install.packages('installr'); install.Rtools()
 
-devtools::install_github("ropensci/plotly") 
-devtools::install_github('talgalili/heatmaply')
-library("heatmaply")
-
+#devtools::install_github("ropensci/plotly") 
+#devtools::install_github('talgalili/heatmaply')
+#devtools::install_github('spedygiorgio/markovchain')
+#library("ggplot2")
+#library("heatmaply")
+#remove.packages("ggplot2")
+#install.packages("ggplot2")
 
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
 highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
@@ -38,9 +41,9 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 
 time_end <- 1000 # Length of simulation in years
 
-maxt <- 1000
-brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
+maxt <- 1000 #controls the markovChain
 
+brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
 xseq<-seq(0,1,0.05)
@@ -61,25 +64,30 @@ plant_mat_high <- plant_S_mat * high_harv
 
 
 #===========================================================================
-
 #============FUNCTIONS======================================================
+#===========================================================================
 
+#----------------------------Sigmoid----------------------------
 sigmoid <- function(k, x0, x) 
 {
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
 } 
+
+#----------------------------Linear----------------------------
 
 linear <- function(m, x, b)
 {
   y <- m*x + b
   return(y)
 }
+#----------------------------LogisticGrowth----------------------------
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
   Nnext <- R*N*(1-N/(K*(p))) - H*N + N
   return(Nnext)
 } 
+#----------------------------LogisticGrowthHunt----------------------------
 
 LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
@@ -87,6 +95,10 @@ LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m)
   return(Nnext)
 } 
 # Specifying the markov chain
+#install.packages('markovchain')
+
+#----------------------------MarkovChain----------------------------
+library('markovchain')
 markovChain<- function(){
   
   statesNames = c("low","high")
@@ -98,18 +110,20 @@ markovChain<- function(){
   harvest_seq <- markovchain::rmarkovchain(n=time_end, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
-harvest_seq <- markovChain()
 
-stoch_growth <- function(){
-  r <- numeric(maxt)
+
+#----------------------------agouti_Abundance----------------------------
+
+agouti_Abundance<- function(s,m){
+  
   plant_mat <- matrix(0, nrow = 17)
   plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
   plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
   plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
   
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
-  
   plant_mat <- plant_mat / sum(plant_mat)
+  
   agouti_vec <- c(agoutiInit)
   
   markovChain()
@@ -117,18 +131,41 @@ stoch_growth <- function(){
   for (i in 1:maxt)
   {
     h_i <- harvest_seq[i]
-
-    if (h_i == "low") 
+    
+    if (h_i=="low") 
     {
-      pmat <- plant_mat_low
       h_off <- lowHunting
     } 
     
     else 
     {
-      pmat <- plant_mat_high
       h_off <- highHunting
     }
+    
+    p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+    agouti_vec[(i+1)] <- LogisticGrowthHuntRK(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p,s,m)
+    
+  }
+  return(agouti_vec[length(agouti_vec)])
+}
+
+#----------------------------plant_abundance_underHighHunt----------------------------
+
+plant_abundance_underHighHunt<- function(highHunting){
+  plant_mat <- matrix(0, nrow = 17)
+  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  
+  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+  plant_mat <- plant_mat / sum(plant_mat)
+  
+  agouti_vec <- c(agoutiInit)
+  
+  for (i in 1:maxt)
+  {
+    pmat <- plant_mat_high
+    h_off <- highHunting 
     
     p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
@@ -141,15 +178,10 @@ stoch_growth <- function(){
     plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
     plant_all <- cbind(plant_all, plant_mat_sum)
     
-    N <- sum(plant_mat)
-    r[i] <- log(N)
-    plant_mat <- plant_mat / N
   }
-  
-  loglambsim <- mean(r)
-  
-  return(loglambsim)
+  return(plant_mat_sum)
 }
+
 
 
 stoch_growth_underHighHuntHarv <- function(){
@@ -192,55 +224,39 @@ stoch_growth_underHighHuntHarv <- function(){
   
   return(loglambsim)
 }
-agouti_Abundance<- function(s,m){
-  
+
+harvest_seq <- markovChain() #MaxT controls the marckovchev array.
+
+#----------------------------stoch_growth----------------------------
+stoch_growth <- function(){
+  r <- numeric(maxt)
   plant_mat <- matrix(0, nrow = 17)
   plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
   plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
   plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
   
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
-  plant_mat <- plant_mat / sum(plant_mat)
   
+  plant_mat <- plant_mat / sum(plant_mat) #Growth rate!
   agouti_vec <- c(agoutiInit)
   
-  markovChain()
+  #markovChain()
   
-  for (i in 1:maxt)
+  for (i in 1:maxt) #maxt controls markovchain array. 
   {
     h_i <- harvest_seq[i]
     
-    if (h_i=="low") 
+    if (h_i == "low") 
     {
+      pmat <- plant_mat_low
       h_off <- lowHunting
     } 
     
     else 
     {
+      pmat <- plant_mat_high
       h_off <- highHunting
     }
-    
-    p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
-    agouti_vec[(i+1)] <- LogisticGrowthHuntRK(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p,s,m)
-    
-  }
-  return(agouti_vec[length(agouti_vec)])
-}
-plant_abundance_underHighHunt<- function(highHunting){
-  plant_mat <- matrix(0, nrow = 17)
-  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
-  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
-  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
-  
-  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
-  plant_mat <- plant_mat / sum(plant_mat)
-  
-  agouti_vec <- c(agoutiInit)
-  
-  for (i in 1:maxt)
-  {
-    pmat <- plant_mat_high
-    h_off <- highHunting 
     
     p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
@@ -253,31 +269,42 @@ plant_abundance_underHighHunt<- function(highHunting){
     plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
     plant_all <- cbind(plant_all, plant_mat_sum)
     
+    N <- sum(plant_mat)
+    r[i] <- log(N)
+    plant_mat <- plant_mat / N
   }
-  return(plant_mat_sum)
+  
+  loglambsim <- mean(r)
+  
+  return(loglambsim)
 }
 
-
 #===================================================================================================================
-
+#Binary HeatMap
+#===================================================================================================================
 growthRate_mat<-matrix(0,21,21)
 binary_mat<- matrix(0,21,21)
 rownames(growthRate_mat) <- paste(xseq)
 colnames(growthRate_mat) <- paste(xseq)
+
+rownames(growthRate_mat) <- paste(seq(0,1,0.05)) #steps of .05
+colnames(growthRate_mat) <- paste(seq(0,1,0.05))
 
 rownames(binary_mat) <- paste(xseq)
 colnames(binary_mat) <- paste(xseq)
 
 num<-1 
 num1<-1
-for(i in xseq)
+
+
+for(i in seq(0,1,0.05)) #steps of .05
 {
   high_harv[1,12:17] <- i # Multiplier for fecundity rate for Adult trees
   num1<-1
-  for(j in xseq){
-
+  for(j in seq(0,1,0.05)){
+    
     high_harv[cbind(12:17,12:17)] <- j # Multiplier for survival rate of Adult trees
-    plant_mat_low <- plant_S_mat
+    plant_mat_low <- plant_S_mat #plat_s_mat is the original 17x17 matrix.
     plant_mat_high <- plant_S_mat * high_harv
     growth_rate <- exp(stoch_growth())
     growthRate_mat[num,num1]<-growth_rate
@@ -287,9 +314,9 @@ for(i in xseq)
       binary_mat[num,num1]<-1
     }
     else{
-     binary_mat[num,num1]<-0
+      binary_mat[num,num1]<-0
     }
-   
+    
     num1<-num1+1
   }
   num<- num+1
@@ -300,10 +327,28 @@ heatmaply::heatmaply(binary_mat,margins=c(4,4), Rowv=NA, Colv=NA,xlab = "Adult S
 heatmaply::heatmaply(growthRate_mat,margins = c(4,4), Rowv=NA, Colv=NA,xlab = "Adult Survival", ylab="Germination", scale="none")
 
 #saving these the heatmap as images 
-dir.create("heatMaps")
-library(heatmaply)
-heatmaply(growthRate_mat, file = "heatMaps/heatmaply_plot.png",Rowv=NA, Colv=NA,xlab = "Adult Survival", ylab="Germination")
-browseURL("heatMaps/heatmaply_plot.png")
+#dir.create("heatMaps")
+#library(heatmaply)
+#heatmaply(growthRate_mat, file = "heatMaps/heatmaply_plot.png",Rowv=NA, Colv=NA,xlab = "Adult Survival", ylab="Germination")
+#browseURL("heatMaps/heatmaply_plot.png")
+
+
+#=============================================================================================================================
+# Blue Heat Map
+#=============================================================================================================================
+#install.packages("akima")
+library(akima)
+
+filled.contour(x = seq(0,1,0.05),
+               y = seq(0,1,0.05),
+               z = growthRate_mat,
+               color.palette =
+                 colorRampPalette(c("white", "blue")),
+               xlab = "Adult Survival",
+               ylab = "Germination",
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
+
+
 
 #=====================================================================================================================
 #Growth Rate vs animal Population
@@ -311,12 +356,13 @@ browseURL("heatMaps/heatmaply_plot.png")
 agouti_Growth<- matrix(0, 1, 21)
 agouti_pop<- matrix(0, 1, 21)
 num<-1
-for(i in xseq)
-  {
-    agouti_Growth[num]<- (i)
-    agouti_pop[num]<- agouti_Abundance(agouti_Growth[num],1)
-    print(c(agouti_Growth[num], agouti_pop[num]))
-    num=num+1
+
+for(i in seq(0,1,0.05))
+{
+  agouti_Growth[num]<- (i)
+  agouti_pop[num]<- agouti_Abundance(agouti_Growth[num],1)
+  print(c(agouti_Growth[num], agouti_pop[num]))
+  num=num+1
 }
 
 plot(agouti_Growth,agouti_pop, xlab="Proportion of the Growth Rate", ylab="Animal Population", col="brown", ylim=c(0,4000), type="l",xlim=c(0,1),xaxs="i") 
@@ -346,14 +392,16 @@ adults_hunt_mat<- matrix(0,1,21)
 
 hunting_mat<- matrix(0,1,21)
 num<-1
-for(i in xseq)
-  {
-    hunting_mat[num]<-i 
-    seedling_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[1]
-    sapling_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[2]
-    adults_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[3]
-    num= num+1
-  }
+
+for(i in seq(0,1,0.05))
+{
+  hunting_mat[num]<-i 
+  seedling_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[1]
+  sapling_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[2]
+  adults_hunt_mat[num]<- plant_abundance_underHighHunt(hunting_mat[num])[3]
+  num= num+1
+}
+
 
 par(mar=c(5,4,1,1),oma=c(0,0,0,0))
 plot(hunting_mat, log(seedling_hunt_mat), xlab="Proportion of Animal Hunted", ylab="log(Plant Population)", col="brown", ylim=c(0,35), type="l",xlim=c(0,1),xaxs="i")
@@ -613,6 +661,10 @@ filled.contour(x =  low_high_huntseq,
                xlab = "Hunting(low/high)",
                ylab = "Adult Survival",
                key.title = title(main = "Growth Rate", cex.main = 0.5))
+
+
+
+
 
 
 #=======================================================================================================================
