@@ -1,5 +1,4 @@
-# Plotting Rmax/Hunting (x) vs. HiLo Frequency (y)
-# Changed Markov Chain probabilities
+# Plotting delta (bound on plants' affect on animals) VS. Hunting (Average Hunting)
 
 ###=======================================================================
 ### Parameters
@@ -42,9 +41,9 @@ agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepn
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 1000 # Length of simulation in years
+time_end <- 50000 # Length of simulation in years
 
-maxt <- 1000
+maxt <- 2000
 brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
@@ -85,7 +84,7 @@ LogisticGrowthHunt<- function(R, N, K, H, p)
 }
 
 
-LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m) 
+LogisticGrowthHuntRK<- function(R, N, K, H, p,s) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
   Nnext <- R*(s)*N*(1-N/((K*(p)))) - H*N + N
   return(Nnext)
@@ -164,13 +163,13 @@ stoch_growth <- function(delta)
 
 #===========================================================================
 
-library(markovchain)
+
 xseq <- seq(0, 1, 0.05)
 yseq <- seq(0, 1, 0.05)
 
 growthRate_mat<-matrix(0,length(xseq),length(yseq))
 row.names(growthRate_mat) <- paste(yseq)
-colnames(growthRate_mat) <- paste(seq(0, 100, 5))
+colnames(growthRate_mat) <- paste(xseq)
 
 binary_mat<- matrix(0,length(xseq),length(yseq))
 rownames(binary_mat) <- paste(yseq)
@@ -184,29 +183,21 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 
 for(i in xseq)
 {
-  hiFreq <- i
-  
-  statesNames = c("low","high")
-  mcHarvest <- new("markovchain", states = statesNames, 
-                   transitionMatrix = matrix(data = c(1-i, i, 1-i, i), byrow = TRUE, 
-                                             nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
-  set.seed(100)
-  harvest_seq <- markovchain::rmarkovchain(n=time_end, object = mcHarvest, t0="low")
 
   numCol<-1
   
   for(j in yseq)
   {
-
+    
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv
     highHunting <- j
     lowHunting  <- j
-    growth_rate <- exp(stoch_growth())
+    growth_rate <- exp(stoch_growth(i))
     growthRate_mat[numRow,numCol]<-growth_rate
     print(growthRate_mat[numRow,numCol])
-
-    if(growthRate_mat[numRow,numCol]>1 ||growthRate_mat[numRow,numCol]==1)
+    
+    if((growthRate_mat[numRow,numCol]>1 ||growthRate_mat[numRow,numCol]==1) && (!is.na(growthRate_mat[numRow,numCol])))
     {
       binary_mat[numRow,numCol]<-1
     }
@@ -215,17 +206,17 @@ for(i in xseq)
     }
     
     numCol<-numCol+1
-
+    
   }
-
+  
   numRow<- numRow+1
-
+  
 }
 
 
 library(heatmaply)
-heatmaply(growthRate_mat[c(length(xseq):1),],Rowv=NA, Colv=NA,ylab = "High Harv/Hunt Frequency", xlab="Average Hunting Level", labRow = xseq, labCol=xseq )
-heatmaply(binary_mat[c(length(xseq):1),], Rowv=NA, Colv=NA,scale="none",xlab = "High Harv/Hunt Frequency", ylab="Average Hunting Level",labRow = xseq, labCol=xseq)
+heatmaply(growthRate_mat[c(length(xseq):1),],Rowv=NA, Colv=NA,ylab = "Delta", xlab="Average Hunting Level", labRow = xseq, labCol=xseq )
+heatmaply(binary_mat[c(length(xseq):1),], Rowv=NA, Colv=NA,scale="none",xlab = "Delta", ylab="Average Hunting Level",labRow = xseq, labCol=xseq)
 
 #test <- matrix(c(1,1,2,2,3,3,4,4,5), nrow = 3, ncol = 3, byrow = TRUE)
 #heatmaply(test,Rowv=NA, Colv=NA,xlab = "High Harv/Hunt Frequency", ylab="Average Hunting Level" )
@@ -238,10 +229,14 @@ filled.contour(x = xseq,
                z = growthRate_mat,
                color.palette =
                  colorRampPalette(c("white", "blue")),
-               xlab = "Average Hunting Level",
-               ylab = "High Harv/Hunt Frequency",
-               key.title = title(main = "High Harvest/Hunting Frequency vs. Average Hunting Level", cex.main = 0.5))
+               ylab = "Average Hunting Level",
+               xlab = "Delta",
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
 #dev.off()
 
-# Not sure axes are correct for the heatmap. (Pretty sure it is correct for contour plot).
+# I think that contour rotates matrix 90 degrees counterclockwise
+
+#==========================================================================
+
+

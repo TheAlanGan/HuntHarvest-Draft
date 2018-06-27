@@ -276,7 +276,7 @@ sensitivity_matrix <- function(A)
   return(list(sens=sensMat, elas=elasMat, stableAge=stableAgeDistr))
 }
 
-sensElasMats <- sensitivity_matrix(plant_S_mat)
+#sensElasMats <- sensitivity_matrix(plant_S_mat)
 
 ###===========================================================================
 
@@ -787,7 +787,92 @@ sens_init_pop <- function()
   #mtext("Harvest:",1,line=3,at=-2.5,col="black")
 }
 
-sens_init_pop()
+#sens_init_pop()
+
+
+
+###====================================================================
+### Sensitivity Analysis of Delta
+###====================================================================
+sens_delta <- function()
+{
+  plant_mat <- matrix(0, nrow = 17)
+  
+#  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+#  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+#  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  plant_mat <- sensElasMats$stableAge*5000
+  agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+  
+  plant_all <- matrix( c(sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) ) # This will contain the summed plant populations at ALL timesteps
+  
+  plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,ylimit), type="l",xlim=c(1,time_end),xaxs="i")
+  
+  for (j in seq(0, 1, 0.1)) 
+  {
+    perc <- 0.9
+    seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
+    saplingInit <- perc * saplingCapacity#500
+    adultInit <- perc * adultCapacity#100
+    agoutiInit <- perc * agoutiCapacity#5000
+    
+    plant_mat <- matrix(0, nrow = 17)
+    plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+    plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
+    plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+    agouti_vec <- c(agoutiInit) # Initializing the vector containing agouti pop at each timestep
+    
+    plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
+    
+    for (i in 1:time_end) 
+    {
+      h_i <- harvest_seq[i]
+      
+      if (h_i == "low") 
+      {
+        pmat <- plant_mat_low
+        h_off <- lowHunting
+
+      } 
+      
+      else 
+      {
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      }
+      
+      p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*j + (1-j) # bounded between 0.9 and 1.0.... k was 0.1
+      agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+      plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+      plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+      #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+      plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+      
+      #Summing the stages into 3 categories for better plotting
+      plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
+      plant_all <- cbind(plant_all, plant_mat_sum)
+    }
+    
+    lines(agouti_vec/agoutiCapacity, col='orange') # Just looking at agouti and adult tree population
+    lines(plant_all[3,]/adultCapacity, col='forestgreen')
+    #    lines(plant_all[2,]/saplingCapacity, col='turquoise3')
+    #    lines(plant_all[1,]/seedlingCapacity, col='brown')
+    
+  }
+  
+  par(mar=c(5,4,1,1),oma=c(0,0,0,0))
+  #plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,10), type="l",xlim=c(1,time_end),xaxs="i")
+  #lines(plant_all[1,]/seedlingCapacity, col="forestgreen")
+  #lines(plant_all[2,]/saplingCapacity, col="turquoise3")
+  #lines(plant_all[3,]/adultCapacity, col="orange")
+  #legend("bottomleft", c("Animal","Adult","Sapling","Seedling"),col=c("brown","orange","turquoise3","forestgreen"),lty=c(1,1,1,1), bty="n",ncol=2)
+  #mtext("Time step", 1, line=1.85, at=25, col="black")
+  #axis(1,1:time_end,labels=toupper( substr(harvest_seq,1,1) ),line=2,col=NA,col.ticks=NA,col.axis="black", cex.axis=0.65)
+  #mtext("Harvest:",1,line=3,at=-2.5,col="black")
+}
+
+sens_delta()
+
 
 
 
