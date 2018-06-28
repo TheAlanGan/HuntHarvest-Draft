@@ -141,14 +141,14 @@ elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplie
   for (i in 1:nrow(X))
   {
     plantMat[cbind(12:17,12:17)] <- X[i, 1] * (.99 - .85) + .85 # Adult Survival... # Mapping [0,1] to [0.85,0.99]
-    plantMat[1,12:17] <- X[i, 2] * (25 - 10) + 10 # Adult Germination... # Mapping [0,1] to [10,25]
-    m <- X[i, 4] * (0.1-0.03) + 0.03 # Steepness of Sigmoid... # Mapping [0,1] to [0.01,0.05]
+    plantMat[1,12:17] <- X[i, 2] * (25 - 1) + 1 # Adult Germination... # Mapping [0,1] to [10,25]
+    m <- X[i, 4] * (0.1 - 0.03) + 0.03 # Steepness of Sigmoid... # Mapping [0,1] to [0.01,0.05]
     
     agouti_to_PlantSteepness <- -(log(1-m)-log(m))/(m-0.5) # Steepness needed for sigmoid(m) = m
 
     plantMat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, 1/2, X[i, 3]) # Sigmoid using X[,3]
     
-    elas <- sensitivity_matrix(plantMat)
+    elas <- sensitivity_matrix(plantMat) # Getting elasticity matrix
 
     # Getting the proper elasticity values for each parameter set    
     SeedlingSurvElas[i] <- mean(elas[cbind(1:4,1:4)])    
@@ -173,72 +173,73 @@ elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplie
   avgSaplingTransElas <- mean(SaplingTransElas)
   avgAdultTransElas <- mean(AdultTransElas)
 
+  # Returns average elasticity values of interest
   return(c(avgSeedlingSurvElas, avgSaplingSurvElas, avgAdultSurvElas, avgGerminationElas, avgSeedlingTransElas, avgSaplingTransElas, avgAdultTransElas))
 }
 
 
 # This function uses less of a 'for loop'
-elas_lhs_better <- function(X)
-{
-  numSamples <- nrow(X)
-  
-  plantMat <- array(0, dim = c(numSamples, 17, 17)) # First index is which sample
-  
-  AdultSurvElas <- matrix(numeric(numSamples))
-  SaplingSurvElas <- matrix(numeric(numSamples))
-  SeedlingSurvElas <- matrix(numeric(numSamples))
-  
-  GerminationElas <- matrix(numeric(numSamples))
-  
-  SeedlingTransElas <- matrix(numeric(numSamples))
-  SaplingTransElas <- matrix(numeric(numSamples))
-  AdultTransElas <- matrix(numeric(numSamples))
-  
-  agouti_to_PlantSteepness <- matrix(numeric(numSamples))
-  
-  
-  plantMat[, cbind(12:17, 12:17)] <- X[, 1] * (.99 - .85) + .85 # Adult Survival... # Mapping [0,1] to [0.85,0.99]
-  plantMat[, 1, 12:17] <- X[, 2] * (25 - 10) + 10 # Adult Germination... # Mapping [0,1] to [10,25]
-  m <- X[, 4] * (0.1-0.03) + 0.03 # Steepness of Sigmoid... # Mapping [0,1] to [0.01,0.05]
-    
-  agouti_to_PlantSteepness <- -(log(1-m)-log(m))/(m-0.5) # Steepness needed for sigmoid(m) = m
-    
-  plantMat[, 1, 12:17] <- sigmoidMat(agouti_to_PlantSteepness, 1/2, X[, 3]) # Sigmoid using X[,3]
-
-  elas <- matrix(numeric(numSamples))
-  
-  for (i in 1:numSamples)
-  {
-    elas[i] <- sensitivity_matrix(plantMat[i,,])
-  }
-
-  # Getting the proper elasticity values for each parameter set
-  SeedlingSurvElas <- mean(elas[,cbind(1:4,1:4)])    
-  SaplingSurvElas <- mean(elas[,cbind(5:11,5:11)])
-  AdultSurvElas <- mean(elas[,cbind(12:17,12:17)])
-    
-  GerminationElas <- mean(elas[,1,12:17])
-    
-  SeedlingTransElas <- mean(elas[,cbind(2:5,1:4)])
-  SaplingTransElas <- mean(elas[,cbind(6:12,5:11)])
-  AdultTransElas <- mean(elas[,cbind(13:17,12:16)])
-  
-  # Averaging elasticity values over all parameter sets
-  avgSeedlingSurvElas <- mean(SeedlingSurvElas)    
-  avgSaplingSurvElas <- mean(SaplingSurvElas)
-  avgAdultSurvElas <- mean(AdultSurvElas)
-  
-  avgGerminationElas <- mean(GerminationElas)
-  
-  avgSeedlingTransElas <- mean(SeedlingTransElas)
-  avgSaplingTransElas <- mean(SaplingTransElas)
-  avgAdultTransElas <- mean(AdultTransElas)
-  
-  return(c(avgSeedlingSurvElas, avgSaplingSurvElas, avgAdultSurvElas, avgGerminationElas, avgSeedlingTransElas, avgSaplingTransElas, avgAdultTransElas))
-}
+# elas_lhs_better <- function(X)
+# {
+#   numSamples <- nrow(X)
+#   
+#   plantMat <- array(0, dim = c(numSamples, 17, 17)) # First index is which sample
+#   
+#   AdultSurvElas <- matrix(numeric(numSamples))
+#   SaplingSurvElas <- matrix(numeric(numSamples))
+#   SeedlingSurvElas <- matrix(numeric(numSamples))
+#   
+#   GerminationElas <- matrix(numeric(numSamples))
+#   
+#   SeedlingTransElas <- matrix(numeric(numSamples))
+#   SaplingTransElas <- matrix(numeric(numSamples))
+#   AdultTransElas <- matrix(numeric(numSamples))
+#   
+#   agouti_to_PlantSteepness <- matrix(numeric(numSamples))
+#   
+#   
+#   plantMat[, cbind(12:17, 12:17)] <- 5#X[, 1] * (.99 - .85) + .85 # Adult Survival... # Mapping [0,1] to [0.85,0.99]
+#   plantMat[, 1, 12:17] <- X[, 2] * (25 - 10) + 10 # Adult Germination... # Mapping [0,1] to [10,25]
+#   m <- X[, 4] * (0.1-0.03) + 0.03 # Steepness of Sigmoid... # Mapping [0,1] to [0.01,0.05]
+#     
+#   agouti_to_PlantSteepness <- -(log(1-m)-log(m))/(m-0.5) # Steepness needed for sigmoid(m) = m
+#     
+#   plantMat[, 1, 12:17] <- sigmoidMat(agouti_to_PlantSteepness, 1/2, X[, 3]) # Sigmoid using X[,3]
+# 
+#   elas <- matrix(numeric(numSamples))
+#   
+#   for (i in 1:numSamples)
+#   {
+#     elas[i] <- sensitivity_matrix(plantMat[i,,])
+#   }
+# 
+#   # Getting the proper elasticity values for each parameter set
+#   SeedlingSurvElas <- mean(elas[,cbind(1:4,1:4)])    
+#   SaplingSurvElas <- mean(elas[,cbind(5:11,5:11)])
+#   AdultSurvElas <- mean(elas[,cbind(12:17,12:17)])
+#     
+#   GerminationElas <- mean(elas[,1,12:17])
+#     
+#   SeedlingTransElas <- mean(elas[,cbind(2:5,1:4)])
+#   SaplingTransElas <- mean(elas[,cbind(6:12,5:11)])
+#   AdultTransElas <- mean(elas[,cbind(13:17,12:16)])
+#   
+#   # Averaging elasticity values over all parameter sets
+#   avgSeedlingSurvElas <- mean(SeedlingSurvElas)    
+#   avgSaplingSurvElas <- mean(SaplingSurvElas)
+#   avgAdultSurvElas <- mean(AdultSurvElas)
+#   
+#   avgGerminationElas <- mean(GerminationElas)
+#   
+#   avgSeedlingTransElas <- mean(SeedlingTransElas)
+#   avgSaplingTransElas <- mean(SaplingTransElas)
+#   avgAdultTransElas <- mean(AdultTransElas)
+#   
+#   return(c(avgSeedlingSurvElas, avgSaplingSurvElas, avgAdultSurvElas, avgGerminationElas, avgSeedlingTransElas, avgSaplingTransElas, avgAdultTransElas))
+# }
 ###===========================================================================
-set.seed(100)
-lhSample <- t(randomLHS(4, 100, TRUE))
+
+lhSample <- t(randomLHS(4, 500))
 a <- elas_lhs(lhSample)
 plot(a)
 
