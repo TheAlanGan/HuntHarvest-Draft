@@ -124,6 +124,32 @@ BMlogs <- log10(BMs/1000)
 plot(BMlogs, rmax_allo, pch=19, xlab=expression(paste("Body mass (", log[10]," kgs)")), ylab=expression(r[max]), xlim=c(-0.5,2.5),ylim=c(0,0.5), xaxs="i", yaxs="i")
 points(log10(rmaxdf$BM_kg),rmaxdf$rMax, col="red", pch=19)
 legend("topleft",c("Cole","Allometric"),pch=rep(19,2), col=c("red","black"),bty="n")
+
+### Finding allometric coefficient for birds
+    # It seems like the coefficient that people have found is buried in some really old papers. Let's take Appendix 2 from an old paper and calculate it ourselves
+gaillardApp2 <- tabulizer::extract_tables(file='~/GoogleDrive/Readings/Exploitation/Theory/Allometry/Gaillard_BirdRmax_allometry.pdf',pages=c(17:18))
+# gaillardApp2p3 <- tabulizer::extract_areas(file='~/GoogleDrive/Readings/Exploitation/Theory/Allometry/Gaillard_BirdRmax_allometry.pdf',pages=c(19)) # sadly doesn't work
+
+massp2 <- gaillardApp2[[2]][,4] # annoyingly, has AFR (age first reproduction) appended
+massp2 <- unlist( lapply( strsplit(massp2," "), function(x) {head(x,1)}) )
+
+fecp2 <- gaillardApp2[[2]][,6] # same problem for fecundity sadly
+fecp2 <-  unlist( lapply( strsplit(fecp2," "), function(x) {head(x,1)}) )
+
+gaillardTab <- data.frame(Mass=c( as.numeric(gaillardApp2[[1]][,3]), as.numeric(massp2)),
+                          FEC=c( as.numeric(gaillardApp2[[1]][,5]), as.numeric(fecp2)))
+
+gaillardTab$Mass <- gaillardTab$Mass/1000
+gaillardTab[,c('lnMass','lnFec')] <- apply(gaillardTab, 2, function(x) log(x))
+gaillardTab[,c('bLnMass')] <- gaillardTab$lnMass*-0.25
+
+summary(nls(FEC~ I(a*Mass^-0.25), start=list(a=1), data=gaillardTab)) # fit a power law; a = 3.2542 similar to:
+summary(lm(lnFec ~ bLnMass, data=gaillardTab)) # which returns quite different results
+exp(1.00538) # scaling coefficient from linear regression, a= 2.73
+
+ # So I think something between 2.73 - 3.5 is fine to get a sense of the range of allometric rmax values for birds
+  # e.g.: rmax = 
+# exp(1.00538)*(bird mass (g))^(-0.25)
 #===========================================================================
 #============FUNCTIONS======================================================
 #===========================================================================
