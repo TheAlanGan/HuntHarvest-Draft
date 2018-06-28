@@ -13,32 +13,32 @@ library(lhs)
 
 # highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
 # highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
-# agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
+# animalGrowth <- 1.1 # Growth rate of animals in logistic model
 # 
-# lowHunting <- 0.1 # Percentage of agoutis hunted during LOW hunting
-# highHunting <- 0.25 # Percentage of agoutis hunted during HIGH hunting
+# lowHunting <- 0.1 # Percentage of animals hunted during LOW hunting
+# highHunting <- 0.25 # Percentage of animals hunted during HIGH hunting
 
-seedlingCapacity <- 5000 # Carrying Capacities. Tree capacities don't matter as much.
-saplingCapacity <- 500
-adultCapacity <- 100
-agoutiCapacity <- 5200
+seedlingCapacity <- 24272 # Carrying Capacities. Tree capacities don't matter as much.
+saplingCapacity <- 260
+adultCapacity <- 492
+animalCapacity <- 1
 perc <- 0.9
 ylimit <- 1 # For plotting
 
 seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
 saplingInit <- perc * saplingCapacity#500
 adultInit <- perc * adultCapacity#100
-agoutiInit <- perc * agoutiCapacity#5000
+animalInit <- perc * animalCapacity#5000
 
 # m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
-# agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
-# plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
+# animal_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*animalCapacity) # Steepness needed for sigmoid(m) = m
+# plant_to_animalSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
 time_end <- 500 # Length of simulation in years
 maxt <- 500 # Length of simulation for stoch_growth function.
 
-brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
+#brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 # high_harv <- matrix(1, nrow = 17, ncol = 17)
 
@@ -71,14 +71,14 @@ linear <- function(m, x, b)
 
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
-{ # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
+{ # p is how the plant affects carrying capacity of animals (from 0 to 1)
   Nnext <- R*N*(1-N/(K*(p))) - H*N + N
   return(Nnext)
 }
 
 
 LogisticGrowthHuntRK<- function(R, N, K, H, p,s) 
-{ # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
+{ # p is how the plant affects carrying capacity of animals (from 0 to 1)
   Nnext <- R*(s)*N*(1-N/((K*(p)))) - H*N + N
   return(Nnext)
 } 
@@ -93,7 +93,7 @@ markovChain<- function(tEnd){
                    transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
                                              nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
   # Simulating a discrete time process for harvest
-#  set.seed(100)
+  #  set.seed(100)
   harvest_seq <- markovchain::rmarkovchain(n=tEnd, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
@@ -127,7 +127,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
   numSamples <- nrow(X)
   stochGrowthRates <- numeric(numSamples)
   popAfterTime <- numeric(numSamples)
-
+  
   for (i in 1:numSamples)
   {
     # Unpacking parameters from matrix
@@ -137,34 +137,34 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0 # Mapping to [0,0.9]
     lowHunting <- X[i, 5] * (0.25 - 0) + 0 # Mapping to [0,0.25]
     highHunting <- X[i, 6] * (1 - 0.25) + 0.25 # Mapping to [0.25,1]
-    agoutiGrowth <- X[i, 7] * (1.1 - 0.2) + 0.2 # Mapping to [0.2,1.1]
+    animalGrowth <- X[i, 7] * (1.1 - 0.2) + 0.2 # Mapping to [0.2,1.1]
     adultCapacity <- X[i, 8] * (150 - 50) + 50 # Mapping to [50,150]
     
     ### Using parameters ###
     # Setting low harvest matrix
-    plant_S_mat <- matrix( 0, nrow = 17, ncol = 17)
-    diag(plant_S_mat) <- c(0.455, 0.587, 0.78, 0.821, 0.941, 0.938, 0.961, 0.946, 0.94, 0.937, 0.936, 0.966, 0.968, 0.971, 0.965, 0.967, 0.985)
-    plant_S_mat[cbind(2:17,1:16)] <- matrix(c(0.091, 0.147, 0.134, 0.167, 0.044, 0.047, 0.034, 0.049, 0.055, 0.058, 0.059, 0.029, 0.027, 0.024, 0.020, 0.018))
-    plant_S_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
+    plant_S_mat <- matrix( 0, nrow = 4, ncol = 4)
+    diag(plant_S_mat) <- c(0.5380,0.6769,0.5806,1)
+    plant_S_mat[cbind(2:4,1:3)] <- matrix(c(0.0062,0.2615,0.413))
+    plant_S_mat[1,4] <- matrix(c(54))
     
     # Setting high harvest matrix
-    high_harv <- matrix(1, nrow = 17, ncol = 17)    
-    high_harv[1,12:17] <- highHarvestFecundity 
-    high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
+    high_harv <- matrix(1, nrow = 4, ncol = 4)    
+    high_harv[1,4] <- highHarvestFecundity 
+    high_harv[4,4] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
     
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv
     
-    agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
-    plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity) 
+    animal_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*animalCapacity) # Steepness needed for sigmoid(m) = m
+    plant_to_animalSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity) 
     
     r <- numeric(maxt) # maxt is global constant
-    plant_mat <- matrix(0, nrow = 17)
-    plant_mat[1:4] <- seedlingInit/4   # Initial populations are constants
-    plant_mat[5:11] <- saplingInit/7   # So they are not parameters
-    plant_mat[12:17] <- adultInit/6 
-    agouti_vec <- c(agoutiInit)
-
+    plant_mat <- matrix(0, nrow = 4)
+    plant_mat[1] <- seedlingInit   # Initial populations are constants
+    plant_mat[2:3] <- saplingInit/2   # So they are not parameters
+    plant_mat[4] <- adultInit 
+    animal_vec <- c(animalInit)
+    
     harvest_seq <- markovChain(maxt)
     
     # if (i == 19)
@@ -173,7 +173,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     # }
     
     N <- 0 # Pop of plants after time maxt
-
+    
     # Running the simulation to find 'Stochastic Growth Rate'
     for (j in 1:maxt)
     {
@@ -193,22 +193,23 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       
       prevN <- sum(plant_mat)
       
-      p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*delta + (1-delta)
-      agouti_vec[(j+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(j)],agoutiCapacity,h_off, p)
-      plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-      plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(j+1)]) # k was 0.0025
-      #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(j+1)], b) # A different functional form
+      p <- sigmoid(plant_to_animalSteepness, adultCapacity/2, sum(plant_mat[4]))*delta + (1-delta)
+      animal_vec[(j+1)] <- LogisticGrowthHunt(animalGrowth, animal_vec[(j)],animalCapacity,h_off, p)
+      plant_animal_mat <- matrix(1, nrow = 4, ncol = 4)
+      plant_animal_mat[1,4] <- sigmoid(animal_to_PlantSteepness, animalCapacity/2, animal_vec[(j+1)]) # k was 0.0025
+      #  plant_animal_mat[1,12:17] <- linear(m, animal_vec[(j+1)], b) # A different functional form
       plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
       
       N <- sum(plant_mat) 
       r[i] <- log(N / prevN) # Calculating Growth Rate
     }
     
-#    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
+    #    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
     popAfterTime[i] <- N
     
   }
-#  return(stochGrowthRates)
+  #  return(stochGrowthRates)
+  print(popAfterTime)
   return(popAfterTime)
   
 }
@@ -227,6 +228,6 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
 
 
 # LHS Sobol
-lhs <- sobolroalhs(model = stoch_growth_sobol, factors = 8, N = 1000, p = 1, order = 1, nboot = 100)
+lhs <- sobolroalhs(model = stoch_growth_sobol, factors = 8, N = 100, p = 1, order = 1, nboot = 100)
 print(lhs)
 plot(lhs)
