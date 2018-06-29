@@ -1,3 +1,5 @@
+# Monte-Carlo-type approach to testing the difference 
+
 # Averaging Elasticities over randomly generated parameters
 # using Latin hypercube sampling
 
@@ -110,71 +112,104 @@ sensitivity_matrix <- function(A)
 ### Elasticity Latin Hypercube Averaging
 ###===========================================================================
 # Parameter multipliers are in following order:
-#   1.  Adult Survival under Harvest --- [0.85, 0.99]
-#   2.  Germination under Harvest --- [10, 25] ?
-#   3.  Animal proportion of carrying capacity --- [0, 1]
-#   4.  Steepness of sigmoid --- [0.03, 0.1]
+#   1.  Low Hunting --- [0, 1]
+#   2.  High Hunting --- [0, 1]
+#   3.  High Hunting Proportion --- [0, 1]
 
-# Saved for later:
-#   5.  Seedling Survival Probabilities --- []
-#   6.  Sapling Survival Probabilities  --- []
-#   7.  Adult Survival Probabilities --- []
-#   8.  Seedling Transition Probabilities --- []
-#   9.  Sapling Transition Probabilties --- []
-#   10. Adult Transition Probabilities --- []
-
-elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplier)
+test_hunting <- function(X) # X is LHS matrix (each row is a parameter set multiplier)
 {
   plantMat <- plant_S_mat
-  plantMat <- plantMat
+
+  numSamples <- nrow(X)
+  stochGrowthRates <- numeric(numSamples)
+  popAfterTime <- numeric(numSamples)
   
-  AdultSurvElas <- c()
-  SaplingSurvElas <- c()
-  SeedlingSurvElas <- c()
-  
-  GerminationElas <- c()
-  
-  SeedlingTransElas <- c()
-  SaplingTransElas <- c()
-  AdultTransElas <- c()
-  
-  for (i in 1:nrow(X))
+  for (i in 1:numSamples)
   {
-    plantMat[cbind(12:17,12:17)] <- X[i, 1] * (.99 - .85) + .85 # Adult Survival... # Mapping [0,1] to [0.85,0.99]
-    plantMat[1,12:17] <- X[i, 2] * (25 - 1) + 1 # Adult Germination... # Mapping [0,1] to [10,25]
-    m <- X[i, 4] * (0.1 - 0.03) + 0.03 # Steepness of Sigmoid... # Mapping [0,1] to [0.01,0.05]
-    
-    agouti_to_PlantSteepness <- -(log(1-m)-log(m))/(m-0.5) # Steepness needed for sigmoid(m) = m
+    # Unpacking parameters from matrix
+    lowHunting <- X[i, 1] * (X[i, 2])
+    highHunting <- X[i, 2]
 
-    plantMat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, 1/2, X[i, 3]) # Sigmoid using X[,3]
     
-    elas <- sensitivity_matrix(plantMat) # Getting elasticity matrix
-
-    # Getting the proper elasticity values for each parameter set    
-    SeedlingSurvElas[i] <- mean(elas[cbind(1:4,1:4)])    
-    SaplingSurvElas[i] <- mean(elas[cbind(5:11,5:11)])
-    AdultSurvElas[i] <- mean(elas[cbind(12:17,12:17)])
+    ### Using parameters ###
+    # Setting low harvest matrix
+    plant_S_mat <- matrix( 0, nrow = 17, ncol = 17)
+    diag(plant_S_mat) <- c(0.455, 0.587, 0.78, 0.821, 0.941, 0.938, 0.961, 0.946, 0.94, 0.937, 0.936, 0.966, 0.968, 0.971, 0.965, 0.967, 0.985)
+    plant_S_mat[cbind(2:17,1:16)] <- matrix(c(0.091, 0.147, 0.134, 0.167, 0.044, 0.047, 0.034, 0.049, 0.055, 0.058, 0.059, 0.029, 0.027, 0.024, 0.020, 0.018))
+    plant_S_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
     
-    GerminationElas[i] <- mean(elas[1,12:17])
+    # Setting high harvest matrix
+    high_harv <- matrix(1, nrow = 17, ncol = 17)    
+    high_harv[1,12:17] <- highHarvestFecundity 
+    high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
     
-    SeedlingTransElas[i] <- mean(elas[cbind(2:5,1:4)])
-    SaplingTransElas[i] <- mean(elas[cbind(6:12,5:11)])
-    AdultTransElas[i] <- mean(elas[cbind(13:17,12:16)])
+    plant_mat_low <- plant_S_mat
+    plant_mat_high <- plant_S_mat * high_harv
+    
+    agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
+    plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity) 
+    
+    r <- numeric(maxt) # maxt is global constant
+    plant_mat <- matrix(0, nrow = 17)
+    plant_mat[1:4] <- seedlingInit/4   # Initial populations are constants
+    plant_mat[5:11] <- saplingInit/7   # So they are not parameters
+    plant_mat[12:17] <- adultInit/6 
+    agouti_vec <- c(agoutiInit) * 0.5
+    
+    harvest_seq <- markovChain(maxt)
+    
+    # if (i == 19)
+    # {
+    #   print(plant_mat_low)
+    # }
+    
+    N <- 0 # Pop of plants after time maxt
+    
+    # Running the simulation to find 'Stochastic Growth Rate'
+    for (j in 1:maxt)
+    {
+      h_j <- harvest_seq[j]
+      
+      if (h_j == "low") 
+      {
+        pmat <- plant_mat_low
+        h_off <- lowHunting
+      } 
+      
+      else 
+      {
+        pmat <- plant_mat_high
+        h_off <- highHunting
+      }
+      
+      prevN <- sum(plant_mat)
+      
+      p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*delta + (1-delta)
+      agouti_vec[(j+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(j)],agoutiCapacity,h_off, p)
+      
+      if (agouti_vec[j+1] < 0)
+      {
+        agouti_vec[j+1] <- 0
+      }
+      
+      plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
+      plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(j+1)])*deltaPlant + (1- deltaPlant)
+      #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(j+1)], b) # A different functional form
+      plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+      
+      N <- sum(plant_mat) 
+      r[i] <- log(N / prevN) # Calculating Growth Rate
+    }
+    
+    #    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
+    popAfterTime[i] <- N # Plant population after time. (not animals)
+    
   }
+  #  return(stochGrowthRates)
+  return(popAfterTime)
   
-  # Averaging elasticity values over ALL parameter sets
-  avgSeedlingSurvElas <- mean(SeedlingSurvElas)    
-  avgSaplingSurvElas <- mean(SaplingSurvElas)
-  avgAdultSurvElas <- mean(AdultSurvElas)
   
-  avgGerminationElas <- mean(GerminationElas)
-  
-  avgSeedlingTransElas <- mean(SeedlingTransElas)
-  avgSaplingTransElas <- mean(SaplingTransElas)
-  avgAdultTransElas <- mean(AdultTransElas)
 
-  # Returns average elasticity values of interest
-  return(c(avgSeedlingSurvElas, avgSaplingSurvElas, avgAdultSurvElas, avgGerminationElas, avgSeedlingTransElas, avgSaplingTransElas, avgAdultTransElas))
 }
 
 
@@ -240,6 +275,6 @@ elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplie
 ###===========================================================================
 
 lhSample <- t(randomLHS(4, 10000)) # Doing the Latin Hypercube Sampling. (Needs to be transposed)
-a <- elas_lhs(lhSample)
+a <- test_Hunting(lhSample)
 plot(a)
 

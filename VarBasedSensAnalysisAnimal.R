@@ -93,7 +93,7 @@ markovChain<- function(tEnd){
                    transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
                                              nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
   # Simulating a discrete time process for harvest
-#  set.seed(100)
+  #  set.seed(100)
   harvest_seq <- markovchain::rmarkovchain(n=tEnd, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
@@ -129,7 +129,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
   numSamples <- nrow(X)
   stochGrowthRates <- numeric(numSamples)
   popAfterTime <- numeric(numSamples)
-
+  
   for (i in 1:numSamples)
   {
     # Unpacking parameters from matrix
@@ -167,7 +167,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     plant_mat[5:11] <- saplingInit/7   # So they are not parameters
     plant_mat[12:17] <- adultInit/6 
     agouti_vec <- c(agoutiInit) * 0.5
-
+    
     harvest_seq <- markovChain(maxt)
     
     # if (i == 19)
@@ -176,7 +176,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     # }
     
     N <- 0 # Pop of plants after time maxt
-
+    
     # Running the simulation to find 'Stochastic Growth Rate'
     for (j in 1:maxt)
     {
@@ -209,15 +209,15 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(j+1)], b) # A different functional form
       plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
       
-      N <- sum(plant_mat) 
+      N <- agouti_vec[(j+1)] 
       r[i] <- log(N / prevN) # Calculating Growth Rate
     }
     
-#    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
-    popAfterTime[i] <- N # Plant population after time. (not animals)
+    #    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
+    popAfterTime[i] <- N # Animal Population After time (not plants)
     
   }
-#  return(stochGrowthRates)
+  #  return(stochGrowthRates)
   return(popAfterTime)
   
 }
@@ -238,9 +238,9 @@ factList <- c('m', 'delta_a', 'High Harv Germ', 'High Harv Surv', 'Low Hunt', 'H
 
 
 # Lating Hypercube Sampling Sobol
-#lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
-#print(lhsSobol)
-#plot(lhsSobol)
+lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
+print(lhsSobol)
+plot(lhsSobol)
 
 
 #Fourier Amplitude Sens Test (Saltelli) --- NOT WORKING
