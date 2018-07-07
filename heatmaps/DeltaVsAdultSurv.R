@@ -118,7 +118,7 @@ stoch_growth <- function(delta)
   
   plant_all <- matrix( c(sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) ) # This will contain the summed plant populations at ALL timesteps
   
-  agouti_vec <- c(agoutiCapacity)*.5#* (1-delta*.95)
+  agouti_vec <- c(agoutiCapacity)#* (1-delta*.99)
   
   markovChain()
   
@@ -164,8 +164,8 @@ stoch_growth <- function(delta)
 #===========================================================================
 
 
-xseq <- seq(0, 1, 0.05)
-yseq <- seq(0, 1, 0.05)
+xseq <- seq(0, 1, 0.01)
+yseq <- seq(.6, 1, 0.05)
 
 growthRate_mat<-matrix(0,length(xseq),length(yseq))
 row.names(growthRate_mat) <- paste(yseq)

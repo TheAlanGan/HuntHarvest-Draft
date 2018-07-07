@@ -238,13 +238,13 @@ factList <- c('m', 'delta_a', 'High Harv Germ', 'High Harv Surv', 'Low Hunt', 'H
 
 
 # Lating Hypercube Sampling Sobol
-lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
-print(lhsSobol)
-plot(lhsSobol)
+# lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
+# print(lhsSobol)
+# plot(lhsSobol)
 
 
 #Fourier Amplitude Sens Test (Saltelli) --- NOT WORKING
-#fast <- fast99(model = stoch_growth_sobol, factors = 9, n = 1000, q.arg = list(min=0.0, max=1.0))
-#print(fast)
-#plot(fast)
+fastA <- fast99(model = stoch_growth_sobol, factors = 9, n = 1000, q.arg = list(min=0.0, max=1.0))
+print(fastA)
+plot(fastA)
 

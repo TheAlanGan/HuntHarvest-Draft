@@ -228,7 +228,7 @@ filled.contour(x = xseq,
                y = yseq,
                z = growthRate_mat,
                color.palette =
-                 colorRampPalette(c("white", "blue")),
+                 colorRampPalette(c("yellow", "blue")),
                ylab = "Average Hunting Level",
                xlab = "Delta",
                key.title = title(main = "Growth Rate", cex.main = 0.5))

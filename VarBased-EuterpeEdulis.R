@@ -18,25 +18,25 @@ library(lhs)
 # lowHunting <- 0.1 # Percentage of animals hunted during LOW hunting
 # highHunting <- 0.25 # Percentage of animals hunted during HIGH hunting
 
-seedlingCapacity <- 24272 # Carrying Capacities. Tree capacities don't matter as much.
+seedlingCapacity <- 24272 # Carrying Capacities. Tree capacities don't matter as much. (Only adult matters)
 saplingCapacity <- 260
 adultCapacity <- 492
-animalCapacity <- 1
-perc <- 0.9
+animalCapacity <- 5200
+perc <- 1.0
 ylimit <- 1 # For plotting
 
-seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
-saplingInit <- perc * saplingCapacity#500
-adultInit <- perc * adultCapacity#100
-animalInit <- perc * animalCapacity#5000
+seedlingInit <- perc * seedlingCapacity #5000 # Initial Populations
+saplingInit <- perc * saplingCapacity #500
+adultInit <- perc * adultCapacity #100
+animalInit <- perc * animalCapacity #5000
 
 # m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 # animal_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*animalCapacity) # Steepness needed for sigmoid(m) = m
 # plant_to_animalSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 500 # Length of simulation in years
-maxt <- 500 # Length of simulation for stoch_growth function.
+time_end <- 600 # Length of simulation in years
+maxt <- 600 # Length of simulation for stoch_growth function.
 
 #brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
@@ -113,9 +113,9 @@ markovChain<- function(tEnd){
 # 5.  low hunting rate (herbivores) ... [0, 0.25]
 # 6.  high hunting rate (herbivores) ... [0.25, 1]
 # 7.  rMax (herbivore) ... [0.2, 1.1]
-# 8.  Adult Carrying Capacity ... [50,150]
-# 9.  
-# 10. 
+# 8.  Adult Carrying Capacity ... [300,600]
+# 9.  delta_plant ... [0, 1]
+# 10 .
 # 11. 
 # 12. 
 
@@ -135,16 +135,18 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     delta <- X[i, 2] # No need for mapping since delta is in [0,1] already
     highHarvestFecundity <- X[i, 3] * (0.9 - 0) + 0 # No mapping?
     highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0 # Mapping to [0,0.9]
-    lowHunting <- X[i, 5] * (0.25 - 0) + 0 # Mapping to [0,0.25]
-    highHunting <- X[i, 6] * (1 - 0.25) + 0.25 # Mapping to [0.25,1]
+    #lowHunting <- X[i, 5] * (0.25 - 0) + 0 # Mapping to [0,0.25]
+    #highHunting <- X[i, 6] * (1 - 0.25) + 0.25 # Mapping to [0.25,1]
+    constHunt <- X[i, 5]
     animalGrowth <- X[i, 7] * (1.1 - 0.2) + 0.2 # Mapping to [0.2,1.1]
-    adultCapacity <- X[i, 8] * (150 - 50) + 50 # Mapping to [50,150]
+    adultCapacity <- X[i, 8] * (600 - 300) + 300 # Mapping to [50,150]
+    deltaPlant <- X[i, 9] # No need for mapping
     
     ### Using parameters ###
     # Setting low harvest matrix
     plant_S_mat <- matrix( 0, nrow = 4, ncol = 4)
-    diag(plant_S_mat) <- c(0.5380,0.6769,0.5806,1)
-    plant_S_mat[cbind(2:4,1:3)] <- matrix(c(0.0062,0.2615,0.413))
+    diag(plant_S_mat) <- c(0.5380, 0.6769, 0.5806, 1)
+    plant_S_mat[cbind(2:4,1:3)] <- matrix(c(0.0062, 0.2615, 0.413))
     plant_S_mat[1,4] <- matrix(c(54))
     
     # Setting high harvest matrix
@@ -167,11 +169,6 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     
     harvest_seq <- markovChain(maxt)
     
-    # if (i == 19)
-    # {
-    #   print(plant_mat_low)
-    # }
-    
     N <- 0 # Pop of plants after time maxt
     
     # Running the simulation to find 'Stochastic Growth Rate'
@@ -182,22 +179,27 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       if (h_j == "low") 
       {
         pmat <- plant_mat_low
-        h_off <- lowHunting
+        h_off <- constHunt #lowHunting
       } 
       
       else 
       {
         pmat <- plant_mat_high
-        h_off <- highHunting
+        h_off <- constHunt #highHunting
       }
       
       prevN <- sum(plant_mat)
       
       p <- sigmoid(plant_to_animalSteepness, adultCapacity/2, sum(plant_mat[4]))*delta + (1-delta)
       animal_vec[(j+1)] <- LogisticGrowthHunt(animalGrowth, animal_vec[(j)],animalCapacity,h_off, p)
+      
+      if (animal_vec[j+1] < 0)
+      {
+        animal_vec[j+1] <- 0``
+      }
+
       plant_animal_mat <- matrix(1, nrow = 4, ncol = 4)
-      plant_animal_mat[1,4] <- sigmoid(animal_to_PlantSteepness, animalCapacity/2, animal_vec[(j+1)]) # k was 0.0025
-      #  plant_animal_mat[1,12:17] <- linear(m, animal_vec[(j+1)], b) # A different functional form
+      plant_animal_mat[1,4] <- sigmoid(animal_to_PlantSteepness, animalCapacity/2, animal_vec[(j+1)])*deltaPlant + (1- deltaPlant)
       plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
       
       N <- sum(plant_mat) 
@@ -209,7 +211,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     
   }
   #  return(stochGrowthRates)
-  print(popAfterTime)
+#  print(popAfterTime)
   return(popAfterTime)
   
 }
@@ -228,6 +230,12 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
 
 
 # LHS Sobol
-lhs <- sobolroalhs(model = stoch_growth_sobol, factors = 8, N = 100, p = 1, order = 1, nboot = 100)
-print(lhs)
-plot(lhs)
+# lhs2 <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 5000, p = 1, order = 1, nboot = 100)
+# print(lhs2)
+# plot(lhs2)
+
+
+#Fourier Amplitude Sens Test (Saltelli) --- Kinda Working?
+fast2 <- fast99(model = stoch_growth_sobol, factors = 9, n = 1000, q.arg = list(min=0.0, max=1.0))
+print(fast2)
+plot(fast2)

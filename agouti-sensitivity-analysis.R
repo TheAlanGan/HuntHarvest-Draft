@@ -32,7 +32,7 @@ agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepn
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is deriv2ed from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 10000 # Length of simulation in years
+time_end <- 2000 # Length of simulation in years
 
 # For linear functional form
 m <- 1/agoutiCapacity
@@ -808,7 +808,7 @@ sens_delta <- function()
   
   plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,ylimit), type="l",xlim=c(1,time_end),xaxs="i")
   
-  for (j in seq(0, 1, 0.1)) 
+  for (j in seq(1, 1, 0.1)) 
   {
     perc <- 0.9
     seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
@@ -854,12 +854,12 @@ sens_delta <- function()
     }
     
     lines(agouti_vec/agoutiCapacity, col='orange') # Just looking at agouti and adult tree population
-    lines(plant_all[3,]/adultCapacity, col='forestgreen')
+    lines(plant_all[1,]/seedlingCapacity, col='forestgreen')
     #    lines(plant_all[2,]/saplingCapacity, col='turquoise3')
     #    lines(plant_all[1,]/seedlingCapacity, col='brown')
     
   }
-  
+#  print(plant_all)
   par(mar=c(5,4,1,1),oma=c(0,0,0,0))
   #plot(1, xlab="", ylab="Population size/Max size", col="brown", ylim=c(0,10), type="l",xlim=c(1,time_end),xaxs="i")
   #lines(plant_all[1,]/seedlingCapacity, col="forestgreen")

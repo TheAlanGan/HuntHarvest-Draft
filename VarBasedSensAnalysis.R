@@ -11,7 +11,7 @@ library(sensitivity)
 library(boot)
 library(lhs)
 
-# highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
+# highHarvestFecundity <- 1 # Multiplier for fecundity rate for Adult trees under HIGH harvest
 # highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
 # agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
 # 
@@ -114,9 +114,9 @@ markovChain<- function(tEnd){
 # 6.  high hunting rate (herbivores) ... [0.25, 1]
 # 7.  rMax (herbivore) ... [0.2, 1.1]
 # 8.  Adult Plant Carrying Capacity ... [50, 150]
+# 9.  delta_plant ... [0, 1]
 
 # To be added:
-# 9.  delta_plant ... [0, 1]
 # 10. initial populations ... []
 # 11. 
 # 12. 
@@ -137,11 +137,12 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     delta <- X[i, 2] # No need for mapping since delta is in [0,1] already
     highHarvestFecundity <- X[i, 3] * (0.9 - 0) + 0 # No mapping?
     highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0 # Mapping to [0,0.9]
-    lowHunting <- X[i, 5] * (0.25 - 0) + 0 # Mapping to [0,0.25]
-    highHunting <- X[i, 6] * (1 - 0.25) + 0.25 # Mapping to [0.25,1]
-    agoutiGrowth <- X[i, 7] * (1.1 - 0.2) + 0.2 # Mapping to [0.2,1.1]
-    adultCapacity <- X[i, 8] * (150 - 50) + 50 # Mapping to [50,150]
-    deltaPlant <- X[i, 9] # No need for mapping
+#    lowHunting <- X[i, 5] * (0.25 - 0) + 0 # Mapping to [0,0.25]
+#    highHunting <- X[i, 6] * (1 - 0.25) + 0.25 # Mapping to [0.25,1]
+    constHunt <- X[i, 5]
+    agoutiGrowth <- X[i, 6] * (1.1 - 0.2) + 0.2 # Mapping to [0.2,1.1]
+    adultCapacity <- X[i, 7] * (150 - 50) + 50 # Mapping to [50,150]
+    deltaPlant <- X[i, 8] # No need for mapping
     
     ### Using parameters ###
     # Setting low harvest matrix
@@ -169,11 +170,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     agouti_vec <- c(agoutiInit) * 0.5
 
     harvest_seq <- markovChain(maxt)
-    
-    # if (i == 19)
-    # {
-    #   print(plant_mat_low)
-    # }
+
     
     N <- 0 # Pop of plants after time maxt
 
@@ -185,13 +182,16 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       if (h_j == "low") 
       {
         pmat <- plant_mat_low
-        h_off <- lowHunting
+#        h_off <- lowHunting
+        h_off <- constHunt
+        
       } 
       
       else 
       {
         pmat <- plant_mat_high
-        h_off <- highHunting
+#        h_off <- highHunting
+        h_off <- constHunt
       }
       
       prevN <- sum(plant_mat)
@@ -234,8 +234,6 @@ factList <- c('m', 'delta_a', 'High Harv Germ', 'High Harv Surv', 'Low Hunt', 'H
 #result <- sobol(model = stoch_growth_sobol, X1 = X1, X2 = X2, order = 1, nboot = 100)
 #print(result)
 
-#f <- stoch_growth_sobol(X1)
-
 
 # Lating Hypercube Sampling Sobol
 #lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
@@ -243,8 +241,17 @@ factList <- c('m', 'delta_a', 'High Harv Germ', 'High Harv Surv', 'Low Hunt', 'H
 #plot(lhsSobol)
 
 
-#Fourier Amplitude Sens Test (Saltelli) --- NOT WORKING
-#fast <- fast99(model = stoch_growth_sobol, factors = 9, n = 1000, q.arg = list(min=0.0, max=1.0))
-#print(fast)
-#plot(fast)
+#Fourier Amplitude Sens Test (Saltelli) --- Kinda Working?
+fast <- fast99(model = stoch_growth_sobol, factors = 8, n = 5000, q.arg = list(min=0.0, max=1.0))
+print(fast)
+plot(fast)
+indicesFirst <- (fast$D1 / fast$V)
+indicesTotal <- (1 - fast$Dt / fast$V - indicesFirst)
 
+data <- data.frame(indicesFirst, indicesTotal)
+factList <- c('m', expression(delta[a]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K[2]), expression(delta[p]))
+counts <- table(indicesFirst, indicesTotal)
+barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,1), legend.text = c('Main Effect', 'Interactions'), xlab = 'Parameters', main = "Variance-Based Sensitivity Analysis")
+par(bg='white')
+dev.copy(png, 'SobolNoBackground.png')
+dev.off()
