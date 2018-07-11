@@ -172,7 +172,7 @@ for(i in xseq)
   num1<-1
   for(j in gseq){
     
-    plant_S_mat[1,12:17]<- exp(j) # Germination rate of Adult trees
+    plant_S_mat[1,12:17]<- j # Germination rate of Adult trees
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv
     growth_rate <- exp(stoch_growth())

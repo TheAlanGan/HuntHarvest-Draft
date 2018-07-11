@@ -1,17 +1,17 @@
 ###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
-# install.packages('heatmaply')
-# install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
-# install.packages.2('devtools')
-# install.packages("akima")
-# install.packages('markovchain')
-# # make sure you have Rtools installed first! if not, then run:
-# #install.packages('installr'); install.Rtools()
-# 
-# devtools::install_github("ropensci/plotly") 
-# devtools::install_github('talgalili/heatmaply')
-# library("heatmaply")
+#install.packages('heatmaply')
+#install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
+#install.packages.2('devtools')
+#install.packages("akima")
+#install.packages('markovchain')
+# make sure you have Rtools installed first! if not, then run:
+#install.packages('installr'); install.Rtools()
+
+#devtools::install_github("ropensci/plotly") 
+#devtools::install_github('talgalili/heatmaply')
+library("heatmaply")
 
 
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
@@ -46,7 +46,8 @@ brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
 xseq<-seq(0,1,0.05)
-gseq<- seq(log(1), log(1000), 0.33)
+low_high_huntseq<- seq(0,0.85,0.05)
+gseq<- seq(0.25,1,0.25)
 
 
 
@@ -57,8 +58,8 @@ plant_S_mat[cbind(2:17,1:16)] <- matrix(c(0.091, 0.147, 0.134, 0.167, 0.044, 0.0
 plant_S_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
 high_harv[1,12:17] <- highHarvestFecundity 
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
-#plant_mat_low <- plant_S_mat
-#plant_mat_high <- plant_S_mat * high_harv
+plant_mat_low <- plant_S_mat
+plant_mat_high <- plant_S_mat * high_harv
 
 
 
@@ -83,11 +84,6 @@ LogisticGrowthHunt<- function(R, N, K, H, p)
   return(Nnext)
 } 
 
-LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m) 
-{ # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*(s)*N*(1-N/((K*(p))*m)) - H*N + N
-  return(Nnext)
-} 
 # Specifying the markov chain
 library('markovchain')
 
@@ -103,6 +99,7 @@ markovChain<- function(){
   return(harvest_seq)
 }
 
+
 stoch_growth <- function(){
   r <- numeric(maxt)
   plant_mat <- matrix(0, nrow = 17)
@@ -111,10 +108,10 @@ stoch_growth <- function(){
   plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
   
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
-  
   agouti_vec <- c(agoutiInit)
   
-  harvest_seq<- markovChain()
+  harvest_seq <- markovChain()
+  
   
   for (i in 1:maxt)
   {
@@ -123,7 +120,7 @@ stoch_growth <- function(){
     if (h_i == "low") 
     {
       pmat <- plant_mat_low
-      h_off <- lowHunting
+      h_off <- highHunting
     } 
     
     else 
@@ -132,8 +129,8 @@ stoch_growth <- function(){
       h_off <- highHunting
     }
     
-    NPrev <- sum(plant_mat)
-    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
+    NPrev<- sum(plant_mat)
+    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1+0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
     plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
@@ -146,39 +143,39 @@ stoch_growth <- function(){
     
     N <- sum(plant_mat)
     r[i] <- log(N/NPrev)
-    
   }
   
   loglambsim <- mean(r)
   
   return(loglambsim)
 }
+
 #==========================================================================================================================================================
+#High hunting with high/low harvest and L-H transition matrix rate 
+growthRate_mat<-matrix(0,length(xseq),length(xseq))
+row.names(growthRate_mat) <- paste(xseq)
+colnames(growthRate_mat) <- paste(xseq, sep)
 
-growthRate_mat<-matrix(0,21,21)
-binary_mat<- matrix(0,21,21)
-rownames(growthRate_mat) <- paste(gseq)
-colnames(growthRate_mat) <- paste(xseq)
-
-rownames(binary_mat) <- paste(gseq)
+binary_mat<- matrix(0,length(xseq),length(xseq))
+rownames(binary_mat) <- paste(xseq)
 colnames(binary_mat) <- paste(xseq)
-
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival
+highHunting<-0
 num<-1 
 num1<-1
 
+
 for(i in xseq)
 {
-  plant_S_mat[cbind(12:17, 12:17)]<- i # Survival rate of Adult trees
+  high_harv[cbind(12:17,12:17)]<-i  # low to high transition rate 
   num1<-1
-  for(j in gseq){
-    
-    plant_S_mat[1,12:17]<- exp(j) # Germination rate of Adult trees
+  for(j in xseq){
+    highHunting<-j
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv
     growth_rate <- exp(stoch_growth())
     growthRate_mat[num,num1]<-growth_rate
-    print(growthRate_mat[num,num1])
-    if(growthRate_mat[num,num1]>=1)
+    if(growthRate_mat[num,num1]>1 ||growthRate_mat[num,num1]==1)
     {
       binary_mat[num,num1]<-1
     }
@@ -193,11 +190,13 @@ for(i in xseq)
 }
 
 library(akima)
-filled.contour(x = xseq,
-               y = gseq ,
+par(bg=NA)
+filled.contour(x = xseq, 
+               y = xseq,
                z = growthRate_mat,
-               color.palette = colorRampPalette(c("red", "blue")),
+               color.palette = colorRampPalette(c("white", "darkgreen")),plot.title = title(
                xlab = "Adult Survival",
-               ylab = "log(Germination)",
-               key.title = title(main = "Growth Rate", cex.main = 0.7))
-
+               ylab = "Constant Hunting", main = "Stochastic growth rate of plant under varrying levels of harvest regimes", cex.main = 0.9),
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
+dev.copy(png,"AS_ConstantHunting.png")
+dev.off()
