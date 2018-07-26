@@ -116,16 +116,8 @@ sensitivity_matrix <- function(A)
 #   4.  Steepness of sigmoid --- [0.03, 0.1]
 #   5.  Sapling-Adult Transition Prob --- [0.03, 0.4]
 #   6.  Seedling Survival --- [0.3405, 0.905]
-#   7.  Seedling to Sapling Transition --- [0.001, 0.652]
+#   7.  Seedling-Sapling Transition --- [0.001, 0.652]
 #   8.  Sapling Survival --- [0.196, 0.957]
-
-# Saved for later:
-#   5.  Seedling Survival Probabilities --- []
-#   6.  Sapling Survival Probabilities  --- []
-#   7.  Adult Survival Probabilities --- []
-#   8.  Seedling Transition Probabilities --- []
-#   9.  Sapling Transition Probabilties --- []
-#   10. Adult Transition Probabilities --- []
 
 elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplier)
 {
@@ -193,9 +185,11 @@ elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplie
 
 ###===========================================================================
 
-lhSample <- t(randomLHS(8, 10000)) # Doing the Latin Hypercube Sampling. (Needs to be transposed)
-a <- elas_lhs(lhSample)
-plot(a)
+numSamples <- 10000 # Number of samples
+
+lhSample <- t(randomLHS(8, numSamples)) # Getting the latin-hypercube samples 
+a <- elas_lhs(lhSample) # Doing the elasticity averaging
+#plot(a)
 
 library(ggplot2)
 
