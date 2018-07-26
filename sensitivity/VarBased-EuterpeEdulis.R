@@ -195,7 +195,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       
       if (animal_vec[j+1] < 0)
       {
-        animal_vec[j+1] <- 0``
+        animal_vec[j+1] <- 0
       }
 
       plant_animal_mat <- matrix(1, nrow = 4, ncol = 4)
@@ -239,3 +239,14 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
 fast2 <- fast99(model = stoch_growth_sobol, factors = 9, n = 1000, q.arg = list(min=0.0, max=1.0))
 print(fast2)
 plot(fast2)
+
+indicesFirst <- (fast2$D1 / fast2$V)
+indicesTotal <- (1 - fast2$Dt / fast2$V - indicesFirst)
+
+data <- data.frame(indicesFirst, indicesTotal)
+factList <- c('m', expression(delta[a]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K[2]), expression(delta[p]))
+counts <- table(indicesFirst, indicesTotal)
+barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,1), legend.text = c('Main Effect', 'Interactions'), xlab = 'Parameters', main = "Variance-Based Sensitivity Analysis")
+par(bg='white')
+dev.copy(png, 'SobolNoBackground.png')
+dev.off()

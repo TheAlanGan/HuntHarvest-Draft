@@ -43,7 +43,7 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 
 time_end <- 50000 # Length of simulation in years
 
-maxt <- 2000
+maxt <- 800
 brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
@@ -115,6 +115,7 @@ stoch_growth <- function(delta)
   plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
   plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
   plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  plant_mat <- plant_mat
   
   plant_all <- matrix( c(sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) ) # This will contain the summed plant populations at ALL timesteps
   
@@ -142,6 +143,12 @@ stoch_growth <- function(delta)
     
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*delta + (1-delta) # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+    
+    if (agouti_vec[i+1] < 0)
+    {
+      agouti_vec[i+1] <- 0
+    }
+    
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
     plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
@@ -165,7 +172,7 @@ stoch_growth <- function(delta)
 
 
 xseq <- seq(0, 1, 0.01)
-yseq <- seq(.6, 1, 0.05)
+yseq <- seq(0.0, 1, 0.01)
 
 growthRate_mat<-matrix(0,length(xseq),length(yseq))
 row.names(growthRate_mat) <- paste(yseq)
@@ -180,7 +187,7 @@ numCol<-1
 
 high_harv[1,12:17] <- highHarvestFecundity 
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
-
+count <-0
 for(i in xseq)
 {
   
@@ -195,7 +202,7 @@ for(i in xseq)
 
     growth_rate <- exp(stoch_growth(i))
     growthRate_mat[numRow,numCol]<-growth_rate
-    print(growthRate_mat[numRow,numCol])
+#    print(growthRate_mat[numRow,numCol])
     
     if((growthRate_mat[numRow,numCol]>1 ||growthRate_mat[numRow,numCol]==1) && (!is.na(growthRate_mat[numRow,numCol])))
     {
@@ -206,6 +213,8 @@ for(i in xseq)
     }
     
     numCol<-numCol+1
+    count <- count + 1
+    print(count)
     
   }
   
@@ -215,12 +224,15 @@ for(i in xseq)
 
 
 library(heatmaply)
-heatmaply(growthRate_mat[c(length(xseq):1),],Rowv=NA, Colv=NA,ylab = "Delta", xlab="Adult Surviva", labRow = xseq, labCol=xseq )
-heatmaply(binary_mat[c(length(xseq):1),], Rowv=NA, Colv=NA,scale="none",xlab = "Delta", ylab="Adult Survival",labRow = xseq, labCol=xseq)
+#heatmaply(growthRate_mat[c(length(xseq):1),],Rowv=NA, Colv=NA,ylab = "Delta", xlab="Adult Surviva", labRow = xseq, labCol=xseq )
+#heatmaply(binary_mat[c(length(xseq):1),], Rowv=NA, Colv=NA,scale="none",xlab = "Delta", ylab="Adult Survival",labRow = xseq, labCol=xseq)
 
 #test <- matrix(c(1,1,2,2,3,3,4,4,5), nrow = 3, ncol = 3, byrow = TRUE)
 #heatmaply(test,Rowv=NA, Colv=NA,xlab = "High Harv/Hunt Frequency", ylab="Average Hunting Level" )
 
+highRes
+
+#growthRate_mat[which(is.na(growthRate_mat))] <- 0.9789672
 
 library(akima)
 #growthRate_mat <- growthRate_mat[c(length(xseq):1), c(length(yseq):1)]

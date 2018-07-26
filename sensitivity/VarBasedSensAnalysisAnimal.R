@@ -11,7 +11,7 @@ library(sensitivity)
 library(boot)
 library(lhs)
 
-# highHarvestFecundity <- 1 # Multiplier for fecundity rate for Adult trees under HIGH harvest
+# highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
 # highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
 # agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
 # 
@@ -93,7 +93,7 @@ markovChain<- function(tEnd){
                    transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE, 
                                              nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
   # Simulating a discrete time process for harvest
-#  set.seed(100)
+  #  set.seed(100)
   harvest_seq <- markovchain::rmarkovchain(n=tEnd, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
@@ -114,9 +114,9 @@ markovChain<- function(tEnd){
 # 6.  high hunting rate (herbivores) ... [0.25, 1]
 # 7.  rMax (herbivore) ... [0.2, 1.1]
 # 8.  Adult Plant Carrying Capacity ... [50, 150]
-# 9.  delta_plant ... [0, 1]
 
 # To be added:
+# 9.  delta_plant ... [0, 1]
 # 10. initial populations ... []
 # 11. 
 # 12. 
@@ -129,7 +129,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
   numSamples <- nrow(X)
   stochGrowthRates <- numeric(numSamples)
   popAfterTime <- numeric(numSamples)
-
+  
   for (i in 1:numSamples)
   {
     # Unpacking parameters from matrix
@@ -139,7 +139,7 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0 # Mapping to [0,0.9]
 #    lowHunting <- X[i, 5] * (0.25 - 0) + 0 # Mapping to [0,0.25]
 #    highHunting <- X[i, 6] * (1 - 0.25) + 0.25 # Mapping to [0.25,1]
-    constHunt <- X[i, 5]
+    constHunt <- X[i,5]
     agoutiGrowth <- X[i, 6] * (1.1 - 0.2) + 0.2 # Mapping to [0.2,1.1]
     adultCapacity <- X[i, 7] * (150 - 50) + 50 # Mapping to [50,150]
     deltaPlant <- X[i, 8] # No need for mapping
@@ -168,12 +168,16 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
     plant_mat[5:11] <- saplingInit/7   # So they are not parameters
     plant_mat[12:17] <- adultInit/6 
     agouti_vec <- c(agoutiInit) * 0.5
-
+    
     harvest_seq <- markovChain(maxt)
-
+    
+    # if (i == 19)
+    # {
+    #   print(plant_mat_low)
+    # }
     
     N <- 0 # Pop of plants after time maxt
-
+    
     # Running the simulation to find 'Stochastic Growth Rate'
     for (j in 1:maxt)
     {
@@ -182,15 +186,14 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       if (h_j == "low") 
       {
         pmat <- plant_mat_low
-#        h_off <- lowHunting
+        #h_off <- lowHunting
         h_off <- constHunt
-        
       } 
       
       else 
       {
         pmat <- plant_mat_high
-#        h_off <- highHunting
+        #h_off <- highHunting
         h_off <- constHunt
       }
       
@@ -209,15 +212,15 @@ stoch_growth_sobol <- function(X) # X is matrix of parameters. Columns are each 
       #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(j+1)], b) # A different functional form
       plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
       
-      N <- sum(plant_mat) 
+      N <- agouti_vec[(j+1)] 
       r[i] <- log(N / prevN) # Calculating Growth Rate
     }
     
-#    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
-    popAfterTime[i] <- N # Plant population after time. (not animals)
+    #    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
+    popAfterTime[i] <- N # Animal Population After time (not plants)
     
   }
-#  return(stochGrowthRates)
+  #  return(stochGrowthRates)
   return(popAfterTime)
   
 }
@@ -234,24 +237,17 @@ factList <- c('m', 'delta_a', 'High Harv Germ', 'High Harv Surv', 'Low Hunt', 'H
 #result <- sobol(model = stoch_growth_sobol, X1 = X1, X2 = X2, order = 1, nboot = 100)
 #print(result)
 
+#f <- stoch_growth_sobol(X1)
+
 
 # Lating Hypercube Sampling Sobol
-#lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
-#print(lhsSobol)
-#plot(lhsSobol)
+# lhsSobol <- sobolroalhs(model = stoch_growth_sobol, factors = 9, N = 10000, p = 1, order = 1, nboot = 1)
+# print(lhsSobol)
+# plot(lhsSobol)
 
 
-#Fourier Amplitude Sens Test (Saltelli) --- Kinda Working?
-fast <- fast99(model = stoch_growth_sobol, factors = 8, n = 5000, q.arg = list(min=0.0, max=1.0))
-print(fast)
-plot(fast)
-indicesFirst <- (fast$D1 / fast$V)
-indicesTotal <- (1 - fast$Dt / fast$V - indicesFirst)
+#Fourier Amplitude Sens Test (Saltelli) --- NOT WORKING
+fastA <- fast99(model = stoch_growth_sobol, factors = 8, n = 1000, q.arg = list(min=0.0, max=1.0))
+print(fastA)
+plot(fastA)
 
-data <- data.frame(indicesFirst, indicesTotal)
-factList <- c('m', expression(delta[a]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K[2]), expression(delta[p]))
-counts <- table(indicesFirst, indicesTotal)
-barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,1), legend.text = c('Main Effect', 'Interactions'), xlab = 'Parameters', main = "Variance-Based Sensitivity Analysis")
-par(bg='white')
-dev.copy(png, 'SobolNoBackground.png')
-dev.off()

@@ -241,7 +241,27 @@ elas_lhs <- function(X) # X is LHS matrix (each row is a parameter set multiplie
 # }
 ###===========================================================================
 
-lhSample <- t(randomLHS(4, 10000)) # Doing the Latin Hypercube Sampling. (Needs to be transposed)
+lhSample <- t(randomLHS(5, 10000)) # Doing the Latin Hypercube Sampling. (Needs to be transposed)
 a <- elas_lhs(lhSample)
 plot(a)
 
+library(ggplot2)
+
+grouped_bar_code <- function(seedSurv, seedSapTrans, sapSurv, sapAdultTrans, adultSurv, germ)
+{
+  # create a dataset
+  stage=c(rep("Seedling" , 3) , rep("Sapling" , 3) , rep("Adult" , 3))
+  demographic_process=factor(rep(c("Growth" , "Survival" , "Germination") , 3), levels = c("Growth" , "Survival" , "Germination"))
+  elasticity=(c(seedSapTrans, seedSurv, 0,sapAdultTrans, sapSurv, 0, 0, adultSurv, germ)) #Put the values here
+  data=data.frame(stage,demographic_process,elasticity)
+  colnames(data) <- c( "Stage", "Demographic Process", "Elast")
+  
+  # Grouped
+  ggplot(data, aes(fill=demographic_process, y=elasticity, x=stage)) +
+    geom_bar(position=position_dodge(width = 0.7), stat="identity", width = 0.7) + ggtitle(paste("Elasticity")) +ylim(0,0.105) + theme_bw()
+  #  p <- p + theme_bw()
+  #  ggsave(p, filename = 'ElasBarPlot.png')#, bg = 'transparent')
+  #  p
+}
+
+grouped_bar_code( a[1], a[5], a[2], a[6], a[3], a[4])

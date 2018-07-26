@@ -183,7 +183,7 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 
 for(i in xseq)
 {
-
+  
   numCol<-1
   
   for(j in yseq)
