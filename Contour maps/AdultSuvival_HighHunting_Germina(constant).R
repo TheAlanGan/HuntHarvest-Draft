@@ -1,3 +1,11 @@
+###===================================================================================================================================
+# Script description: 
+# Generates contour maps under varying germination level (0.25, 0.5, 0.75, 1)
+#
+# For each contour map we are varrying:
+# Constant high hunting with high/low harvest 
+# Adult Survival (highHarvestSurvival multiplier)
+#
 ###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
@@ -80,15 +88,11 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 
-LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m) 
-{ # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*(s)*N*(1-N/((K*(p))*m)) - H*N + N
-  return(Nnext)
-} 
+
 # Specifying the markov chain
 library('markovchain')
 
@@ -138,7 +142,7 @@ stoch_growth <- function(){
     p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     

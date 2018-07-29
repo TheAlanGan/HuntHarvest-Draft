@@ -1,4 +1,12 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Uses chamaedorea elegans plant transition matrix
+#  Generates a  contour map: Color gradient represents stochastic growth rate  
+#  We vary:
+#  Adult Survival highHarvestSurvival multiplier
+#  Rmax range(0-3)
+#
+###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
 # install.packages('heatmaply')
@@ -79,13 +87,9 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
-  return(Nnext)
-} 
-
-LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m) 
-{ # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*(s)*N*(1-N/((K*(p))*m)) - H*N + N
+  #Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  #Nnext <- (R*N*(1-N/(K*(p))) + N) * (1-H) # Growth then hunt
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 # Specifying the markov chain
@@ -138,7 +142,7 @@ stoch_growth <- function(){
       agouti_vec[i+1]=0
     }
     plant_animal_mat <- matrix(1, nrow = 6, ncol = 6)
-    plant_animal_mat[1,4:6] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,4:6] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
@@ -208,8 +212,8 @@ filled.contour(x = xseq,
                y = rmaxseq,
                z = binary_growth.array[, ],
                color.palette = colorRampPalette(c("red", "blue")),
-               plot.tile= title(xlab = "Rmax",
-                                ylab = "Adult Survival",main= "Chamaedorea Elegans"),
+               plot.tile= title(xlab = "Adult Survival",
+                                ylab = "Rmax", main= "Chamaedorea Elegans"),
                key.title = title(main = "Growth Rate", cex.main = 0.7))
 
 

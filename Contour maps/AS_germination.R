@@ -1,4 +1,15 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Generates a contour map, color gradient represents stochastic growth rate of Brazil nut 
+#
+#  For contour map we vary:
+#   Adult Survival (highHarvestSurvival multiplier)
+#   Germination (highHarvestFecundity multiplier)
+##========================================================================================================
+
+
+
+###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
 #install.packages('heatmaply')
@@ -12,6 +23,7 @@
 #devtools::install_github("ropensci/plotly") 
 #devtools::install_github('talgalili/heatmaply')
 library("heatmaply")
+
 
 
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
@@ -80,7 +92,7 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 
@@ -133,7 +145,7 @@ stoch_growth <- function(){
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1+0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
@@ -154,7 +166,7 @@ stoch_growth <- function(){
 #High hunting with high/low harvest and L-H transition matrix rate 
 growthRate_mat<-matrix(0,length(xseq),length(xseq))
 row.names(growthRate_mat) <- paste(xseq)
-colnames(growthRate_mat) <- paste(xseq, sep)
+#colnames(growthRate_mat) <- paste(xseq, sep)
 
 binary_mat<- matrix(0,length(xseq),length(xseq))
 rownames(binary_mat) <- paste(xseq)
@@ -167,10 +179,10 @@ num1<-1
 
 for(i in xseq)
 {
-  high_harv[cbind(12:17,12:17)]<-i  # low to high transition rate 
+  high_harv[cbind(12:17,12:17)]<-i  # adult survival multiplier
   num1<-1
   for(j in xseq){
-    high_harv[1,12:17] <- j 
+    high_harv[1,12:17] <- j  # fecundity multiplier
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv
     growth_rate <- exp(stoch_growth())
@@ -189,14 +201,22 @@ for(i in xseq)
   
 }
 
+
+
 library(akima)
+library(colorspace)
+
 par(bg=NA)
 filled.contour(x = xseq, 
                y = xseq,
                z = growthRate_mat,
-               color.palette = colorRampPalette(c("white", "darkgreen")),plot.title = title(
+               color.palette = diverge_hcl ,plot.title = title(
                xlab = "Adult Survival",
-               ylab = "Germination", main=" Stochastic growth rate of plants under varrying levels of Adult Survival and Germination",cex.main = 0.9),
-               key.title = title(main = "Growth Rate", cex.main = 0.4))
-dev.copy(png,"AS_G.png")
-dev.off()
+               ylab = "Germination"),
+               key.title = title(main = "Growth Rate", cex.main = 0.7)
+               ) 
+
+
+
+
+

@@ -1,4 +1,14 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Generates a contour map, color gradient represents stochastic growth rate of Brazil nut 
+#
+#  For contour map we vary:
+#   Adult Survival (highHarvestSurvival multiplier)
+#   Constant High Hunting (highHunting multiplier) wth H/L harvest 
+##========================================================================================================
+
+
+###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
 #install.packages('heatmaply')
@@ -167,10 +177,10 @@ num1<-1
 
 for(i in xseq)
 {
-  high_harv[cbind(12:17,12:17)]<-i  # low to high transition rate 
+  high_harv[cbind(12:17,12:17)]<-i  # Adult survival multiplier
   num1<-1
   for(j in xseq){
-    highHunting<-j
+    highHunting<-j # hunting multiplier 
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv
     growth_rate <- exp(stoch_growth())
@@ -190,13 +200,17 @@ for(i in xseq)
 }
 
 library(akima)
+library(colorRamps)
+library(grDevices)
+library(RColorBrewer)
+library(colorspace)
 par(bg=NA)
 filled.contour(x = xseq, 
                y = xseq,
                z = growthRate_mat,
-               color.palette = colorRampPalette(c("white", "darkgreen")),plot.title = title(
+               color.palette = diverge_hcl,
+               plot.title = title(
                xlab = "Adult Survival",
-               ylab = "Constant Hunting", main = "Stochastic growth rate of plant under varrying levels of harvest regimes", cex.main = 0.9),
-               key.title = title(main = "Growth Rate", cex.main = 0.5))
-dev.copy(png,"AS_ConstantHunting.png")
-dev.off()
+               ylab = "Hunting"),
+               key.title = title(main = "Growth Rate", cex.main = 0.7))
+

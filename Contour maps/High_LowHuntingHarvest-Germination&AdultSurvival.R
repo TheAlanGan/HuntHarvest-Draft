@@ -1,4 +1,16 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Generates a contour map: Color gradient represents Brazil nut stochastic growth rate 
+#
+#  We vary:
+#  Constant high/low hunting (highHunting/lowHunting multiplier) with H/L harvest 
+#  Adult Survival (highHarvestSurvival multiplier)
+#  
+##========================================================================================================
+
+
+
+###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
 # install.packages('heatmaply')
@@ -72,7 +84,7 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 # Specifying the markov chain
@@ -124,7 +136,7 @@ stoch_growth <- function(){
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
@@ -250,6 +262,5 @@ filled.contour(x = low_high_huntseq,
                xlab = "Adult Survival",
                ylab = " H/L Hunting with H/L Harvest",
                key.title = title(main = "Growth Rate", cex.main = 0.7))
-
 
 

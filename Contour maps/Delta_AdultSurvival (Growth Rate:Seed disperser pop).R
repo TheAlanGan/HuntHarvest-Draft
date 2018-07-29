@@ -1,4 +1,21 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Generates two contour map
+#  
+#  Contour map #1 : Delta and Adult Survival- color gradient represents the agouti population
+#  For contour map we vary:
+#   Adult Survival (highHarvestSurvival multiplier)
+#   Delta animal dependence on disperser-> range (0-1) 
+#  
+#  Contour map #2 : Delta and Adult Survival- color gradient represents the stochastic growth rate of Brazil Nut
+#  For contour map we vary:
+#   Adult Survival (highHarvestSurvival multiplier)
+#   Delta animal dependence on disperser-> range (0-1) 
+#  
+##========================================================================================================
+
+
+###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
 # install.packages('heatmaply')
@@ -72,7 +89,7 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 # Specifying the markov chain
@@ -123,8 +140,11 @@ stoch_growth <- function(delta){
     NPrev<-sum(plant_mat)
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*delta + (1-delta) # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+    if(agouti_vec[i+1]< 0){
+      agouti_vec[i+1] =0
+    }
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
@@ -172,6 +192,9 @@ agouti_Abundance<- function(delta, s){
     
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]*s))*delta + (1-delta) # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+    if(agouti_vec[(i+1)]<0){
+      agouti_vec[(i+1)]=0
+    }
     
   }
   return(agouti_vec[length(agouti_vec)])

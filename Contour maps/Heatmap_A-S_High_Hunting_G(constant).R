@@ -38,15 +38,17 @@ agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepn
 plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
 #This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
 
-time_end <- 5000 # Length of simulation in years
+time_end <- 1000 # Length of simulation in years
 
-maxt <- 5000
+maxt <- 1000
 brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
 xseq<-seq(0,1,0.05)
-gseq<- seq(log(1), log(1000), 0.33)
+low_high_huntseq<- seq(0,0.85,0.05)
+gseq<- seq(0.25,1,0.25)
+
 
 
 ##=======The Original 17-Stage Matrix from Zuidema and high-harvest multiplier
@@ -58,7 +60,13 @@ high_harv[1,12:17] <- highHarvestFecundity
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
 plant_mat_low <- plant_S_mat
 plant_mat_high <- plant_S_mat * high_harv
-#==========================================================================================================================================
+
+
+
+#===========================================================================
+
+#============FUNCTIONS======================================================
+
 sigmoid <- function(k, x0, x) 
 {
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
@@ -72,11 +80,12 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p))) + N) * (1-H)
   return(Nnext)
 } 
-# Specifying the markov chain
 
+
+# Specifying the markov chain
 library('markovchain')
 
 markovChain<- function(){
@@ -90,8 +99,9 @@ markovChain<- function(){
   harvest_seq <- markovchain::rmarkovchain(n=time_end, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
+harvest_seq <- markovChain()
 
-stoch_growth <- function(delta){
+stoch_growth <- function(){
   r <- numeric(maxt)
   plant_mat <- matrix(0, nrow = 17)
   plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
@@ -102,7 +112,7 @@ stoch_growth <- function(delta){
 
   agouti_vec <- c(agoutiInit)
   
-  harvest_seq<-markovChain()
+  harvest_seq <- markovChain()
   
   for (i in 1:maxt)
   {
@@ -119,12 +129,11 @@ stoch_growth <- function(delta){
       pmat <- plant_mat_high
       h_off <- highHunting
     }
-    
-    NPrev<-sum(plant_mat)
-    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*delta + (1-delta) # bounded between 0.9 and 1.0.... k was 0.1
+    NPrev <- sum(plant_mat)
+    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
@@ -141,133 +150,116 @@ stoch_growth <- function(delta){
   
   return(loglambsim)
 }
+  
+#==========================================================================================================================================================
+growth.array<-array(0,dim=c(21,21,4))
+binary_growth.array<-array(0,dim=c(21,21,4))
 
-#Returns the population at the last time step
-agouti_Abundance<- function(delta){
-  
-  plant_mat <- matrix(0, nrow = 17)
-  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
-  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
-  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
-  
-  plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
-  
-  agouti_vec <- c(agoutiInit)
-  
-  harvest_seq<-markovChain()
-  
-  for (i in 1:maxt)
-  {
-    h_i <- harvest_seq[i]
-    
-    if (h_i=="low") 
-    {
-      h_off <- lowHunting
-      pmat <- plant_mat_low
-    } 
-    
-    else 
-    {
-      h_off <- highHunting
-      pmat <- plant_mat_high
+highHunting<-0
+num<-1 
+num1<-1
+num2<- 1
+
+high_harv[1,12:17] <- highHarvestFecundity 
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
+for(s in gseq)
+{
+   num<- 1
+   num1<-1
+   high_harv[1,12:17] <- s # Multiplier for fecundity rate for Adult trees
+   
+      for(i in xseq)
+      {
+        high_harv[cbind(12:17,12:17)]<-i
+        num1<-1
+          for(j in xseq){
+            
+            plant_mat_low <- plant_S_mat
+            plant_mat_high <- plant_S_mat * high_harv
+            highHunting<- j
+            growth_rate <- exp(stoch_growth())
+            growth.array[num,num1,num2]<-growth_rate
+            if(growth.array[num,num1,num2]>=1)
+            {
+              binary_growth.array[num,num1,num2]<-1
+            }
+            else{
+              binary_growth.array[num,num1,num2]<-0
+            }
+            
+            num1<-num1+1
+          }
+       
+      num<- num+1
       
-    }
-    
-    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17])*delta) + (1-delta) # bounded between 0.9 and 1.0.... k was 0.1
-    agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
-    plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
-    #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
-    plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
-    
-    #Summing the stages into 3 categories for better plotting
-    plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
-    plant_all <- cbind(plant_all, plant_mat_sum)
-    
-  }
-  return(agouti_vec[length(agouti_vec)])
+      }
+   num2<- num2+1
+   
 }
 
-#==========================================================================================================================================
-#Adult Survival and Delta (Agouti Population)
-#==========================================================================================================================================
-agoutiAbundance_mat<-matrix(0,21,21)
-rownames(agoutiAbundance_mat) <- paste(xseq)
-colnames(agoutiAbundance_mat) <- paste(xseq)
 
-high_harv[cbind(12:17,12:17)] <- highHarvestSurvival 
+#Heatmap when germination = 0.25
+library(heatmaply)
+heatmaply(growth.array[, , 1],Rowv=NA, Colv=NA,xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival", labRow = xseq, labCol=xseq , main= paste0("Germination " , 0.25 ))
+heatmaply(binary_growth.array[, , 1],Rowv=NA, Colv=NA,scale="none",xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival",labRow = xseq, labCol=xseq, main= paste0("Germination " , 0.25))
 
-num<-1 
-num1<-1
-for(i in xseq)
-{
-  delta<- i
-  num1<-1
-  for(j in xseq){
-    
-    
-    high_harv[cbind(12:17,12:17)] <- j # Multiplier for survival rate of Adult trees
-    plant_mat_low <- plant_S_mat
-    plant_mat_high <- plant_S_mat * high_harv
-    agoutiAbundance_mat[num, num1]<- agouti_Abundance(delta)
-    num1<-num1+1
-  }
-  num<- num+1
-  
-}
+#Heatmap when germination = 0.5
+library(heatmaply)
+heatmaply(growth.array[, , 2],Rowv=NA, Colv=NA,xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival", labRow = xseq, labCol=xseq , main= paste0("Germination " , 0.5 ))
+heatmaply(binary_growth.array[, , 2],Rowv=NA, Colv=NA,scale="none",xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival",labRow = xseq, labCol=xseq, main= paste0("Germination " , 0.5))
 
+#Heatmap when germination = 0.75
+library(heatmaply)
+heatmaply(growth.array[, , 3],Rowv=NA, Colv=NA,xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival", labRow = xseq, labCol=xseq , main= paste0("Germination " , 0.75 ))
+heatmaply(binary_growth.array[, , 3],Rowv=NA, Colv=NA,scale="none",xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival",labRow = xseq, labCol=xseq, main= paste0("Germination " , 0.75))
+
+#Contour map when germination = 1
+library(heatmaply)
+heatmaply(growth.array[, , 4],Rowv=NA, Colv=NA,xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival", labRow = xseq, labCol=xseq , main= paste0("Germination " , 1 ))
+heatmaply(binary_growth.array[, , 4],Rowv=NA, Colv=NA,scale="none",xlab = "High Hunting wth H/L Harvest", ylab="Adult Survival",labRow = xseq, labCol=xseq, main= paste0("Germination " , 1))
+
+
+#Contour map when germination = 0.25
 library(akima)
 filled.contour(x = xseq, 
                y = xseq,
-               z = agoutiAbundance_mat,
+               z = growth.array[, , 1],
                color.palette = colorRampPalette(c("red", "blue")),
-               ylab = "Delta",
-               xlab = "Adult Survival",
-               key.title = title(main = "Agouti Abundance", cex.main = 0.5))
+               plot.title = title( main ="Germination (0.25)",cex.main = 1.5,  ylab = "High Hunting wth H/L Harvest",
+                                   xlab = "Adult Survival"),
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
-#==========================================================================================================================================
-#Adult Survival and Delta (Growth Rate)
-#==========================================================================================================================================
-growthRate_mat<-matrix(0,21,21)
-rownames(growthRate_mat) <- paste(xseq)
-colnames(growthRate_mat) <- paste(xseq)
 
-high_harv[cbind(12:17,12:17)] <- highHarvestSurvival 
 
-num<-1 
-num1<-1
-for(i in xseq)
-{
-   delta<- i  
-   num1<- 1
-  for(j in xseq){
-    
-    high_harv[cbind(12:17,12:17)] <- j # Multiplier for survival rate of Adult trees
-    plant_mat_low <- plant_S_mat
-    plant_mat_high <- plant_S_mat * high_harv
-    growth_rate <- exp(stoch_growth(delta))
-    growthRate_mat[num,num1]<-growth_rate
-    
-    num1<-num1+1
-  }
-  num<- num+1
-  
-}
-
+#Contour map when germination = 0.5
 library(akima)
 filled.contour(x = xseq, 
                y = xseq,
-               z = growthRate_mat,
+               z = growth.array[, , 2],
+               plot.title= title("Germination (0.5)", cex.main = 1.5, ylab = "High Hunting wth H/L Harvest",
+                                 xlab = "Adult Survival"),
                color.palette = colorRampPalette(c("red", "blue")),
-               xlab = "Delta",
-               ylab = "Adult Survival",
-               key.title = title(main = "Growth Rate", cex.main = 0.7))
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
-#==========================================================================================================================================
+#Contour map when germination = 0.75
+library(akima)
+filled.contour(x = xseq, 
+               y = xseq,
+               z = growth.array[, , 3],
+               plot.title= title("Germination (0.75)", cex.main = 1.5, ylab = "High Hunting wth H/L Harvest",
+                                 xlab = "Adult Survival"),
+               color.palette = colorRampPalette(c("red", "blue")),
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
-
-
-
+#Contour map when germination = 1
+library(akima)
+filled.contour(x = xseq, 
+               y = xseq,
+               z = growth.array[, , 4],
+               color.palette = colorRampPalette(c("red", "blue")),
+               plot.title= title("Germination (1)", cex.main = 1.5, ylab = "High Hunting wth H/L Harvest",
+                                 xlab = "Adult Survival"),
+               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
 
 

@@ -1,17 +1,27 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Generates a contour map, color gradient represents stochastic growth rate of Brazil nut 
+#
+#  For contour map we vary:
+#   Adult Survival (highHarvestSurvival multiplier)
+#   Rmax range (0-3) 
+##========================================================================================================
+
+
+
 ### Parameters
 ###====================================================================================================================================
-#install.packages('heatmaply')
-#install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
-#install.packages.2('devtools')
-#install.packages("akima")
-#install.packages('markovchain')
-# make sure you have Rtools installed first! if not, then run:
-#install.packages('installr'); install.Rtools()
-
-#devtools::install_github("ropensci/plotly") 
-#devtools::install_github('talgalili/heatmaply')
-library("heatmaply")
+# install.packages('heatmaply')
+# install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
+# install.packages.2('devtools')
+# install.packages("akima")
+# install.packages('markovchain')
+# # make sure you have Rtools installed first! if not, then run:
+# #install.packages('installr'); install.Rtools()
+# 
+# devtools::install_github("ropensci/plotly") 
+# devtools::install_github('talgalili/heatmaply')
+# library("heatmaply")
 
 
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
@@ -48,7 +58,7 @@ high_harv <- matrix(1, nrow = 17, ncol = 17)
 xseq<-seq(0,1,0.05)
 low_high_huntseq<- seq(0,0.85,0.05)
 gseq<- seq(0.25,1,0.25)
-
+rmaxseq<- seq(0.2,3, 0.1)
 
 
 ##=======The Original 17-Stage Matrix from Zuidema and high-harvest multiplier
@@ -80,7 +90,7 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 
@@ -98,7 +108,7 @@ markovChain<- function(){
   harvest_seq <- markovchain::rmarkovchain(n=time_end, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
-
+harvest_seq <- markovChain()
 
 stoch_growth <- function(){
   r <- numeric(maxt)
@@ -110,8 +120,7 @@ stoch_growth <- function(){
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
   agouti_vec <- c(agoutiInit)
   
-  harvest_seq <- markovChain()
-  
+  markovChain()
   
   for (i in 1:maxt)
   {
@@ -128,12 +137,15 @@ stoch_growth <- function(){
       pmat <- plant_mat_high
       h_off <- highHunting
     }
-    
-    NPrev<- sum(plant_mat)
-    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1+0.9 # bounded between 0.9 and 1.0.... k was 0.1
+    Nprev<- sum(plant_mat)
+    p <- sigmoid(plant_to_AgoutiSteepness, 50, sum(plant_mat[12:17]))*.1 + 0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
+    
+    if(agouti_vec[i+1]<0){
+      agouti_vec[i+1]=0
+    }
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
@@ -142,61 +154,72 @@ stoch_growth <- function(){
     plant_all <- cbind(plant_all, plant_mat_sum)
     
     N <- sum(plant_mat)
-    r[i] <- log(N/NPrev)
+    r[i] <- log(N/Nprev)
+  
   }
   
   loglambsim <- mean(r)
   
   return(loglambsim)
 }
-
 #==========================================================================================================================================================
-#High hunting with high/low harvest and L-H transition matrix rate 
-growthRate_mat<-matrix(0,length(xseq),length(xseq))
-row.names(growthRate_mat) <- paste(xseq)
-colnames(growthRate_mat) <- paste(xseq, sep)
+growth.array<-array(0,dim=c(length(xseq),length(rmaxseq)))
+binary_growth.array<-array(0,dim=c(length(xseq),length(rmaxseq)))
 
-binary_mat<- matrix(0,length(xseq),length(xseq))
-rownames(binary_mat) <- paste(xseq)
-colnames(binary_mat) <- paste(xseq)
-high_harv[cbind(12:17,12:17)] <- highHarvestSurvival
-high_harv[1,12:17] <- highHarvestFecundity 
+agoutiGrowth<-0
 num<-1 
 num1<-1
+high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
 
-
-for(i in xseq)
-{
-  high_harv[cbind(12:17,12:17)]<-i  # low to high transition rate 
-  num1<-1
-  for(j in xseq){
-    high_harv[1,12:17] <- j 
-    plant_mat_low <- plant_S_mat
-    plant_mat_high <- plant_S_mat * high_harv
-    growth_rate <- exp(stoch_growth())
-    growthRate_mat[num,num1]<-growth_rate
-    if(growthRate_mat[num,num1]>1 ||growthRate_mat[num,num1]==1)
-    {
-      binary_mat[num,num1]<-1
-    }
-    else{
-      binary_mat[num,num1]<-0
+  for(i in xseq)
+  {
+    high_harv[cbind(12:17,12:17)]<-i
+    num1<-1
+    for(j in rmaxseq){
+      
+      plant_mat_low <- plant_S_mat
+      plant_mat_high <- plant_S_mat * high_harv
+      agoutiGrowth<- j     
+      growth_rate <- exp(stoch_growth())
+      growth.array[num,num1]<-growth_rate
+      print(growth.array[num,num1])
+      if(growth.array[num,num1]>=1)
+      {
+        binary_growth.array[num,num1]= 1
+      }
+      else
+      {
+        binary_growth.array[num,num1] = 0
+      }
+      
+      
+      num1<-num1+1
     }
     
-    num1<-num1+1
+    num<- num+1
+    
   }
-  num<- num+1
+ 
+  library(akima)
+  filled.contour(x = xseq,
+                 y = rmaxseq,
+                 z = growth.array[,],
+                 color.palette = colorRampPalette(c("white", "blue")),
+                 plot.tile= title(xlab = "Adult Survival",
+                                  ylab = "Rmax", main= "Brazil Nut"),
+                 key.title = title(main = "Growth Rate", cex.main = 0.7), nlevels = 20)
   
-}
+#================================================Binary Matrix===========================================================
+  library(akima)
+  filled.contour(x = xseq,
+                 y = rmaxseq,
+                 z = binary_growth.array[, ],
+                 color.palette = colorRampPalette(c("red", "blue")),
+                 plot.tile= title(xlab = "Adult Survival",
+                                  ylab = "Rmax", main= "Brazil Nut"),
+                 key.title = title(main = "Growth Rate", cex.main = 0.7))
+  
 
-library(akima)
-par(bg=NA)
-filled.contour(x = xseq, 
-               y = xseq,
-               z = growthRate_mat,
-               color.palette = colorRampPalette(c("white", "darkgreen")),
-               xlab = "Adult Survival",
-               ylab = "Germination",
-               key.title = title(main = "Growth Rate", cex.main = 0.7))
-dev.copy(png,"AS_G.png")
-dev.off()
+#=========================================================================================================================
+
+

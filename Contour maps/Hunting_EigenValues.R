@@ -1,4 +1,13 @@
 ###====================================================================================================================================
+##Script Description: 
+#  Generates a line plot: Sustainable disperser hunting threshold 
+#  x-axis = Constant high hunting (highHunting multiplier)
+#  y-axis = Brazil nut stochastic growth rate 
+#
+
+###====================================================================================================================================
+
+###====================================================================================================================================
 ### Parameters
 ###====================================================================================================================================
 #install.packages('heatmaply')
@@ -25,13 +34,13 @@ seedlingCapacity <- 5000 # Carrying Capacities. Tree capacities don't matter as 
 saplingCapacity <- 500
 adultCapacity <- 100
 agoutiCapacity <- 5200
-perc <- 0.9
+perc <- 1.0
 ylimit <- 1 # For plotting
 
 seedlingInit <- perc * seedlingCapacity#5000 # Initial Populations
 saplingInit <- perc * saplingCapacity#500
 adultInit <- perc * adultCapacity#100
-agoutiInit <- perc * agoutiCapacity#5000
+agoutiInit <- perc * agoutiCapacity#5000 * 0.3
 
 m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
 agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
@@ -40,12 +49,12 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 
 time_end <- 1000 # Length of simulation in years
 
-maxt <- 1000
+maxt <- 600
 brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
-xseq<-seq(0,1,0.05)
+xseq<-seq(0,1,0.001)
 low_high_huntseq<- seq(0,0.85,0.05)
 gseq<- seq(0.25,1,0.25)
 
@@ -80,7 +89,8 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  #Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p)))+N) *(1-H)
   return(Nnext)
 } 
 
@@ -120,7 +130,7 @@ stoch_growth <- function(){
     if (h_i == "low") 
     {
       pmat <- plant_mat_low
-      h_off <- lowHunting
+      h_off <- highHunting
     } 
     
     else 
@@ -133,8 +143,7 @@ stoch_growth <- function(){
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.1+0.9 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i+1)]) # k was 0.0025
-    #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
+    plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)])
     plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
     
     #Summing the stages into 3 categories for better plotting
@@ -168,18 +177,20 @@ num<-1
     num<-num+1
   }
 
-par(bg=NA)
-plot(xseq,growthRate_mat, xlab="Hunting", ylab="Growth rate", main="Brazil Nut growth rate under different Agouti Hunting regimes" )
+#par(bg=NA)
+plot(xseq,growthRate_mat, xlab="Hunting", ylab="Growth rate", cex= 0.1 )
+abline(1,0, lty = 2)
+abline(v=0.377,lty = 2)
 dev.copy(png,"Hunting_PlantGrowthRate.png")
 dev.off()
 library(akima)
 
-filled.contour(x = xseq, 
-               y = xseq,
-               z = growthRate_mat,
-               color.palette = colorRampPalette(c("white", "darkgreen")),
-               xlab = "Adult Survival",
-               ylab = "Germination",
-               key.title = title(main = "Growth Rate", cex.main = 0.7))
-dev.copy(png,"AS_G.png")
-dev.off()
+# filled.contour(x = xseq, 
+#                y = xseq,
+#                z = growthRate_mat,
+#                color.palette = colorRampPalette(c("white", "darkgreen")),
+#                xlab = "Adult Survival",
+#                ylab = "Germination",
+#                key.title = title(main = "Growth Rate", cex.main = 0.7))
+# dev.copy(png,"AS_G.png")
+# dev.off()
