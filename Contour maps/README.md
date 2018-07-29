@@ -157,9 +157,9 @@ Overall varying delta p and delta d
 
 For each individual contour plot we are varying harvest (1- Adult Survival multiplier) and hunting (highHunting multiplier) levels
 
--> Contour plot x axis: Harvest
+-> Contour plot x axis: Hunting
 
--> Contour plot y axis: Hunting 
+-> Contour plot y axis: Harvest 
 
 We are using Brazil nut and agouti specific parameter values 
 
