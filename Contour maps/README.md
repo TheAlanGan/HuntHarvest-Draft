@@ -6,6 +6,7 @@ Description: Generates a contour map where we vary:
 
 # File Name: AdultSuvival_HighHunting_Germina(constant)
 Description: Generates contour maps under varying germination levels (0.25, 0.5, 0.75, 1)
+
 For each contour map we vary:
 1. Constant high hunting with high/low harvest 
 2. Adult Survival (highHarvestSurvival multiplier)
@@ -13,18 +14,21 @@ For each contour map we vary:
 
 # File Name: AS_Germination
 Description: Generates a contour map, color gradient represents stochastic growth rate of Brazil nut 
+
 For each contour map we vary:
 1. Adult Survival (highHarvestSurvival multiplier)
 2. Germination (highHarvestFecundity multiplier)
 
 # File Name: constantHunting_AS
 Description: Generates a contour map, color gradient represents stochastic growth rate of Brazil nut 
+
 For each contour map we vary:
 1. Adult Survival (highHarvestSurvival multiplier)
 2. Constant High Hunting (highHunting multiplier) wth H/L harvest 
 
 # File Name: Rmax_AdultSurvival_BrazilNut
 Description: Generates a contour map, color gradient represents stochastic growth rate of Brazil nut 
+
 For contour map we vary:
 1. Adult Survival (highHarvestSurvival multiplier)
 2. Rmax range (0-3) 
@@ -32,6 +36,7 @@ For contour map we vary:
 
 # File Name: Delta_AdultSurvival (Growth Rate/Seed disperser pop)
 Description: Generates two contour maps
+
 Contour map #1 : Delta and Adult Survival- color gradient represents the agouti population
 
 For our contour map we vary:
@@ -47,6 +52,7 @@ For our contour map we vary:
 
 # File Name: germination_AdultSurvival_heatmap(changed in matrix)
 Generates a contour map
+
 Contour map : Log(Germination) and Adult Survival- color gradient represents the stochastic growth rate of Brazil Nut
 
 For our contour map we vary:
@@ -66,6 +72,7 @@ For our contour map we vary:
 Description: Generates a contour map: Color gradient represents Brazil nut stochastic growth rate 
 
 For our contour map we vary:
+
 1. Constant high hunting and harvest (highHunting multiplier and pmat under high harvest) 
 2. Adult Survival (highHarvestSurvival multiplier)
 
@@ -74,6 +81,7 @@ For our contour map we vary:
 Description: Generates a contour map: Color gradient represents Brazil nut stochastic growth rate 
 
 For our contour map we vary:
+
 1. Constant high hunting (highHunting multiplier) with H/L harvest 
 2. Adult Survival (highHarvestSurvival multiplier)
 
