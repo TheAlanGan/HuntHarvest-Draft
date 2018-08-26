@@ -1,0 +1,120 @@
+agouti-brazilnut.R
+	- Runs the simulation. Nothing more, nothing less.
+
+
+agouti-sensitivity-analysis.R
+	- Contains routines that do a lot of things... (too many things, in fact)
+	- Most of this code was used to gain intuition and was not used for any final outputs and/or graphics. 
+
+	The Subroutines (in order starting at line 194):
+
+	- eigvals_vs_survival
+		- Plots Eigenvalues on y-axis and Adult survival on x-axis
+	- sensitivity_matrix
+		- Calculates Sensitivity and Elasticity matrices as well as stable-age distr.
+	- sens_percent_harvest
+		- Plots plant pop under different levels of GERMINATION/FECUNDITY.
+		- Note: Only high harvest/hunting is used (no low harvest/hunt).
+	- sens_surv_prob
+		- Plots plant pop under different levels of ADULT SURVIVAL.
+		- Note: Only high harvest/hunting is used (no low harvest/hunt).
+	- sens_agouti_hunt
+		- Plots plant and animal pops under different levels of HUNTING.
+		- Note: Hunting is constant (not high and low)
+		- THIS WAS USED FOR FINAL OUTPUT
+	- sens_agouti_growth
+		- Plots plant and animal pops under different levels of ANIMAL GROWTH RATE (rMax)
+	- sens_agouti_capacity
+		- Plots plant and animal pops under different levels of ANIMAL CARRYING CAPACITY
+	- sens_init_pop
+		- Plots plant and animal pops under different levels of INITAL POPULATIONS
+	- sens_delta
+		- Plots plant and animal pops under different levels of DELTA D
+	- lambda_sim
+		- Not useful... ignore this
+		- Basicaly testing out some popbio functions
+	- stoch_growth
+		- Function that runs the simulation and calculates the stochastic growth rate of the plants.
+		- maxt = length of time to run the simulation
+		- All heatmap/countour code scripts contain some VARIATION of this funtion.
+	- VertebratePVA
+		- Testing out some more popbio code
+		- Not really useful
+
+
+heatMaps.R
+	- Filed used by Eeman to test out heatmaps and contour plots.
+	- This file was not used for any final output. All heatmaps/countour plots used in final output are in their own individual files/scripts.
+	- This file contains code to generate a few heatmaps and contour plots.
+
+
+sensitivityAnalysis.R
+	- Contains more code to generate a few heatmaps/contour plots.
+	- Multiple heatmaps are contained in this code.
+	- This file was not used for any final output.
+
+
+TestingConstHuntVsHiLoHunt.R
+	- Testing whether constant hunting was the same or different from hi/lo hunting.
+	- Does this by comparing stochastic growth rate of plants for both.
+	- Concluded that they were the same.
+
+
+
+
+-----------------------------------------------------------------------------
+--- Inside "sensitivity/" Directory
+-----------------------------------------------------------------------------
+
+ElasSampArbitraryMat.R
+	- This was used for final output.
+	- Takes our matrix parameter ranges and samples quasi-random matrices using latin hypercube sampling.
+	- Calculates elasticity values for each element of each matrix
+	- Averages these values for each element
+	- Uses 3x3 matrix
+	- Plots this with grouped bar plot
+
+
+ElasSamplingAverage.R
+	- Does elasticity sample averaging with the Brazil Nut matrix.
+
+VarBased-Astrocaryum.R
+	- Not working??? I don't remember
+	- Attempts to do Sobol analysis with Astrocaryum
+
+VarBased-EuterpeEdulis.R
+	- Does Sobol analysis with Euterpe Edulis (cousin of acai palm)
+	- Inconclusive results
+
+VarBased-Random.R
+	- Not working!! (Definitely not working)
+	- Attempts to do Sobol over many random matrices.
+
+VarBasedSensAnalysis.R
+	- This was used for the final Sobol output
+	- Performs Sobol on the Brazil Nut - agouti system.
+	- Calculates Sobol indices for both plant and animal population being the model outputs.
+
+VarBasedSensAnalysisAnimal.R
+	- Not used for final output.
+	- Performs Sobol on Brazil nut- agouti system with animal pop being output.
+	- Made redundant by the file above.
+
+
+
+-----------------------------------------------------------------------------
+--- Inside "heatmaps/" Directory
+-----------------------------------------------------------------------------
+
+DeltaVsAdultSurv.R
+	- Plots contour map of deltaD vs. adult survival
+	- Displays a weird pattern in high levels of delta and high levels of adult survival
+	- Not used in final output, although the graph is interesting.
+
+DeltaVsAvgHunting.R
+	- Plots contour map of deltaD vs. adult survial
+	- Not used in final output
+
+RmaxRatioVsHiLoFreq.R
+	- Not used in final output
+	- varies the Markov chain probabilities.

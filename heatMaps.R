@@ -1,16 +1,18 @@
 ###=======================================================================
 ### Parameters
 ###=======================================================================
-install.packages('heatmaply')
-install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
-install.packages.2('devtools')
+#install.packages('heatmaply')
+#install.packages.2 <- function (pkg) if (!require(pkg)) install.packages(pkg);
+#install.packages.2('devtools')
+#install.packages("akima")
+
 # make sure you have Rtools installed first! if not, then run:
 #install.packages('installr'); install.Rtools()
+#devtools::install_github("ropensci/plotly") 
+#devtools::install_github('talgalili/heatmaply')
 
-devtools::install_github("ropensci/plotly") 
-devtools::install_github('talgalili/heatmaply')
+library(akima)
 library("heatmaply")
-
 
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
 highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
@@ -43,9 +45,8 @@ brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
-xseq<-seq(0,1,0.05)
-low_high_huntseq<- seq(0,0.85,0.05)
-
+xseq <-seq(0,1,0.05)
+low_high_huntseq <- seq(0,0.85,0.05)
 
 
 ##=======The Original 17-Stage Matrix from Zuidema and high-harvest multiplier
@@ -59,7 +60,6 @@ plant_mat_low <- plant_S_mat
 plant_mat_high <- plant_S_mat * high_harv
 
 
-
 #===========================================================================
 
 #============FUNCTIONS======================================================
@@ -69,17 +69,20 @@ sigmoid <- function(k, x0, x)
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
 } 
 
+
 linear <- function(m, x, b)
 {
   y <- m*x + b
   return(y)
 }
 
+
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
   Nnext <- R*N*(1-N/(K*(p))) - H*N + N
   return(Nnext)
-} 
+}
+
 
 LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
@@ -87,7 +90,6 @@ LogisticGrowthHuntRK<- function(R, N, K, H, p,s,m)
   return(Nnext)
 } 
 # Specifying the markov chain
-install.packages('markovchain')
 library('markovchain')
 
 markovChain<- function(){
@@ -101,6 +103,7 @@ markovChain<- function(){
   harvest_seq <- markovchain::rmarkovchain(n=time_end, object = mcHarvest, t0="low")
   return(harvest_seq)
 }
+
 harvest_seq <- markovChain()
 
 stoch_growth <- function(){
@@ -195,6 +198,8 @@ stoch_growth_underHighHuntHarv <- function(){
   
   return(loglambsim)
 }
+
+
 agouti_Abundance<- function(s,m){
   
   plant_mat <- matrix(0, nrow = 17)
@@ -229,6 +234,8 @@ agouti_Abundance<- function(s,m){
   }
   return(agouti_vec[length(agouti_vec)])
 }
+
+
 plant_abundance_underHighHunt<- function(highHunting){
   plant_mat <- matrix(0, nrow = 17)
   plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
@@ -308,6 +315,7 @@ library(heatmaply)
 heatmaply(growthRate_mat, file = "heatMaps/heatmaply_plot.png",Rowv=NA, Colv=NA,xlab = "Adult Survival", ylab="Germination")
 browseURL("heatMaps/heatmaply_plot.png")
 
+
 #=====================================================================================================================
 #Growth Rate vs animal Population
 #=====================================================================================================================
@@ -323,6 +331,8 @@ for(i in xseq)
 }
 
 plot(agouti_Growth,agouti_pop, xlab="Proportion of the Growth Rate", ylab="Animal Population", col="brown", ylim=c(0,4000), type="l",xlim=c(0,1),xaxs="i") 
+
+
 #=======================================================================================================================
 #Carrying Capacity vs Agouti Population
 #=======================================================================================================================
@@ -379,6 +389,8 @@ filled.contour(x = xseq,
               ylab = "Germination",
               key.title = title(main = "Growth Rate", cex.main = 0.5))
 
+
+
 #=============================================================================================================================#
 #Heatmap projecting variation in hunting and its affect on the adult survival and germination 
 #==============================================================================================================================
@@ -430,7 +442,7 @@ heatmaply(binary_mat,Rowv=NA, Colv=NA,scale="none",xlab = "High Hunting", ylab="
 
 
 
-install.packages("akima")
+#install.packages("akima")
 library(akima)
 
 filled.contour(x = xseq,
@@ -442,8 +454,11 @@ filled.contour(x = xseq,
                ylab = "Germination",
                key.title = title(main = "Growth Rate", cex.main = 0.5))
 
+
+
 #======================================================================================================================
 #2 Only High hunting with respect to adult survival
+#======================================================================================================================
 growthRate_mat<-matrix(0,21,21)
 binary_mat<- matrix(0,21,21)
 rownames(growthRate_mat) <- paste(xseq)
@@ -498,6 +513,7 @@ filled.contour(x = xseq,
                  colorRampPalette(c("white", "red")),
                xlab = "High Hunting", ylab="Adult Survival",
                key.title = title(main = "Growth Rate", cex.main = 0.5))
+
 
 #============================================================================================================================
 #Heatmap projection of both high and low hunting with respect to adult survival and germination
@@ -562,8 +578,10 @@ filled.contour(x = low_high_huntseq,
                ylab = "Germination",
                key.title = title(main = "Growth Rate", cex.main = 0.5))
 
+
 #===============================================================================================
 #Changing both high and low hunting with respect to adult survival
+#==============================================================================================
 low_high_huntseq<- seq(0,0.85,0.05)
 growthRate_mat<-matrix(0,length(low_high_huntseq),length(low_high_huntseq))
 binary_mat<- matrix(0,length(low_high_huntseq),length(low_high_huntseq))
@@ -624,6 +642,7 @@ filled.contour(x =  low_high_huntseq,
 
 #=======================================================================================================================
 #High hunting with high/low harvest with respect to Germination
+#======================================================================================================================
 growthRate_mat<-matrix(0,length(xseq),length(xseq))
 row.names(growthRate_mat) <- paste(xseq)
 colnames(growthRate_mat) <- paste(xseq, sep)
@@ -683,6 +702,7 @@ filled.contour(x = xseq,
                key.title = title(main = "Growth Rate", cex.main = 0.5))
 
 #===========================================================================================================================
+
 growthRate_mat<-matrix(0,21,21)
 binary_mat<- matrix(0,21,21)
 rownames(growthRate_mat) <- paste(xseq)
