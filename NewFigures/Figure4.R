@@ -1,5 +1,5 @@
 ##=========================================================================================================
-# Script description: Generating 25 contour plots as a single plot
+# Script description:
 # For each individual contour plot we are varying harvest (both Gt and St) and hunting (highHunting multiplier) levels
 # Contour plot x axis: Harvest
 # Contour plot y axis: Hunting 
