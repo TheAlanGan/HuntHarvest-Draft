@@ -210,7 +210,7 @@ filled.contour(x = delta_p_seq,
                color.palette = diverge_hcl ,plot.title = title(
                  xlab = expression(delta[d]),
                  ylab = expression(delta[p])),
-               key.title = title(main = expression(Disp_pop), cex.main = 0.9)) 
+                 key.title = title(main = "Disp. Pop.", cex.main = 0.9)) 
 
 filled.contour(x = delta_p_seq, 
                y = delta_d_seq,
