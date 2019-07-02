@@ -19,6 +19,7 @@
 #install.packages('installr'); install.Rtools()
 #devtools::install_github("ropensci/plotly") 
 #devtools::install_github('talgalili/heatmaply')
+rm(list=ls())
 
 library(akima)
 library("heatmaply")
@@ -50,7 +51,6 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 time_end <- 50000 # Length of simulation in years
 
 maxt <- 500
-brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 
@@ -64,6 +64,8 @@ high_harv[1,12:17] <- highHarvestFecundity
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
 plant_mat_low <- plant_S_mat
 plant_mat_high <- plant_S_mat * high_harv
+
+brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
 
 #===========================================================================
 #============FUNCTIONS======================================================
