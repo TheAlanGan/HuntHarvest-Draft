@@ -180,7 +180,7 @@ stoch_growth <- function(S_t0, G_t0, R_t0)
 #-------------------------------------------------------------------------------------------
 
 #===========================================================================
-#I used the recerse function because low values correspond to high
+#I used the reverse function because low values correspond to high
 #Harvest rates, since these values are actually multipliers.
 S_t_vals <- rev(seq(0.1, 0.95, length.out=20))
 G_t_vals <- rev(seq(0.1, 0.95, length.out=20))
