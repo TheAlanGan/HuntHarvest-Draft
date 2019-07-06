@@ -133,11 +133,11 @@ stoch_growth <- function(S_t0, G_t0, R_t0)
   #Only the "high harvest/hunting" is being modified.
   for (i in 1:maxt)
   {
-      #These will change for each call to stoch_growth.
-  
-      h_off <- (R_t0)
-      pmat <- plant_mat_high
-  
+    #These will change for each call to stoch_growth.
+    
+    h_off <- (R_t0)
+    pmat <- plant_mat_high
+    
     
     prevN <- sum(plant_mat)
     #Note that delta here is constant and it's 0.1. This based on the agouti-brazlNut
@@ -180,9 +180,9 @@ R_t_vals <- seq(0.1, 0.95, length.out=20)
 #Columns: R_hat
 
 #Create matrix of populations/growth
-#stoch_growthArray<- array(0, dim=c(length(S_t_vals), length(R_t_vals)))
+#plant_population<- array(0, dim=c(length(S_t_vals), length(R_t_vals)))
 N<- c()
-stoch_growthArray<- c()
+plant_population<- c()
 
 # create all possible combinations of S and R
 # multiplier_vals <- expand.grid(S_t_vals, R_t_vals) 
@@ -200,7 +200,7 @@ for (i in 1:nrow(multiplier_vals)) {
   output <- stoch_growth(S_t0 = S_t, G_t0 = G_t, R_t0 = R_t)
   plantPop<- output$PlantPop
   dis_pop = output$dispPop
-  stoch_growthArray[i]<-plantPop
+  plant_population[i]<-plantPop
   N[i] <- dis_pop
   
 }
@@ -208,7 +208,7 @@ for (i in 1:nrow(multiplier_vals)) {
 plot_df <- data.frame(S_t = multiplier_vals[,1],
                       R_t = multiplier_vals[,2],
                       N = N,
-                      P = stoch_growthArray)
+                      P = plant_population)
 
 library(ggplot2)
 
@@ -221,7 +221,7 @@ p
 plot_df <- data.frame(S_t = multiplier_vals[,1],
                       R_t = multiplier_vals[,2],
                       N = N,
-                      P = stoch_growthArray)
+                      P = plant_population)
 
 p <-  ggplot(plot_df, aes(x=S_t, y=R_t, fill=N))
 p <- p + geom_tile() 
