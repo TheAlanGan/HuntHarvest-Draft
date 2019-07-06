@@ -207,10 +207,10 @@ plot_df <- data.frame(S_t = multiplier_vals[,1],
 
 library(ggplot2)
 
-p <-  ggplot(plot_df, aes(x=S_t, y=R_t, fill=P))
-p <- p + geom_tile() 
-p <- p + labs(x=expression(paste("Survivorship multiplier (",S[t],")")),y=expression(paste("Offtake multiplier (",hat(R[t]),")"))) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.text = element_text(size=6))
-p
+q <-  ggplot(plot_df, aes(x=S_t, y=R_t, fill=P))
+q <- q + geom_tile() 
+q <- q + labs(x=expression(paste("Survivorship multiplier (",S[t],")")),y=expression(paste("Offtake multiplier (",hat(R[t]),")"))) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.text = element_text(size=6))
+q
 
 
 plot_df <- data.frame(S_t = multiplier_vals[,1],
