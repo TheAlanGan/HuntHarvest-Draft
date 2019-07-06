@@ -6,6 +6,11 @@
 # Varrying R_hat , G_t and S_t 
 
 # We are using Brazil nut and Agouti parameter values 
+
+#NOTE: R_t and G_t/S_t multipliers have opposite effects:
+#R_t represents percet of animals haunted
+#G_t/S_t represents percent of trees that survive
+#This can be change in the line close to 149.
 #===========================================================================================================
 ###======================================================================
 ### Parameters
@@ -142,9 +147,11 @@ stoch_growth <- function(S_t0, G_t0, R_t0)
     } 
     else 
     {
-      #These will change for each call to stoch_growth.
-      #We need 1-R_t0 Otherwise, the multiplier does the opposite effect.
-      h_off <- (1-R_t0)
+      #NOTE: R_t and G_t/S_t multipliers have opposite effects:
+      #R_t represents percet of animals haunted
+      #G_t/S_t represents percent of trees that survive
+      #This can be fix by changing the next line to:       h_off <- (1-R_t0)
+      h_off <- R_t0
       pmat <- plant_mat_high
     }
     
@@ -182,9 +189,9 @@ stoch_growth <- function(S_t0, G_t0, R_t0)
 #===========================================================================
 #I used the reverse function because low values correspond to high
 #Harvest rates, since these values are actually multipliers.
-S_t_vals <- rev(seq(0.1, 0.95, length.out=20))
-G_t_vals <- rev(seq(0.1, 0.95, length.out=20))
-R_t_vals <- rev(seq(0.1, 0.95, length.out=20))
+S_t_vals <- seq(0.1, 0.95, length.out=20)
+G_t_vals <- seq(0.1, 0.95, length.out=20)
+R_t_vals <- seq(0.1, 0.95, length.out=20)
 #Rows:S_t
 #Columns: R_hat
 
@@ -222,10 +229,6 @@ for (i in S_t_vals) {
 }
 
 
-#They had to be re-defined because it won't let you
-#graph it if they are in decreasing order. 
-S_t_vals <- seq(0.1, 0.95, length.out=20)
-R_t_vals <- seq(0.1, 0.95, length.out=20)
 #==============================================================================================================================================
 library(akima)
 library(colorspace)
@@ -233,7 +236,7 @@ library(colorspace)
 par(bg=NA)
 filled.contour(x = S_t_vals, 
                y = R_t_vals,
-               z = disPop_Array,
+               z = t(disPop_Array),
                color.palette = diverge_hcl ,plot.title = title(
                  xlab = expression("Survivorship multiplier"),
                  ylab = expression("Offtake multiplier")),
@@ -241,7 +244,7 @@ filled.contour(x = S_t_vals,
 
 filled.contour(x = S_t_vals, 
                y = R_t_vals,
-               z = stoch_growthArray,
+               z = t(stoch_growthArray),
                color.palette = diverge_hcl ,plot.title = title(
                  xlab = expression("Survivorship multiplier"),
                  ylab = expression("Offtake multiplier")),
@@ -249,48 +252,47 @@ filled.contour(x = S_t_vals,
 
 
 #Different color pattern
-#Note: you need to transpose Z to get the same graph.
 #Color Options: https://community.plot.ly/t/what-colorscales-are-available-in-plotly-and-which-are-the-default/2079
 #Plot_ly options: https://plot.ly/r/contour-plots/
 library(plotly)
- plot_ly(
+plot_ly(
   x = S_t_vals, 
   y = R_t_vals, 
-  z = t(disPop_Array), 
+  z = disPop_Array, 
   type = "contour",
   colorscale = 'Greens'
 )
- 
- plot_ly(
-   x = S_t_vals, 
-   y = R_t_vals, 
-   z = t(disPop_Array), 
-   type = "contour",
-   colorscale = 'Reds'
- )
- 
- plot_ly(
-   x = S_t_vals, 
-   y = R_t_vals, 
-   z = t(disPop_Array), 
-   type = "contour",
-   colorscale = 'Viridis'
- )
- 
- 
- plot_ly(
-   x = S_t_vals, 
-   y = R_t_vals, 
-   z = t(disPop_Array), 
-   type = "contour",
-   colorscale = 'YlGnBu'
- )
-  
- plot_ly(
-   x = S_t_vals, 
-   y = R_t_vals, 
-   z = t(disPop_Array), 
-   type = "contour",
-   colorscale = 'YlOrRd'
- )
- 
+
+plot_ly(
+  x = S_t_vals, 
+  y = R_t_vals, 
+  z = disPop_Array, 
+  type = "contour",
+  colorscale = 'Reds'
+)
+
+plot_ly(
+  x = S_t_vals, 
+  y = R_t_vals, 
+  z = stoch_growthArray, 
+  type = "contour",
+  colorscale = 'Viridis'
+)
+
+
+plot_ly(
+  x = S_t_vals, 
+  y = R_t_vals, 
+  z = stoch_growthArray, 
+  type = "contour",
+  colorscale = 'YlGnBu'
+)
+
+plot_ly(
+  x = S_t_vals, 
+  y = R_t_vals, 
+  z = disPop_Array, 
+  type = "contour",
+  colorscale = 'YlOrRd'
+)
+
