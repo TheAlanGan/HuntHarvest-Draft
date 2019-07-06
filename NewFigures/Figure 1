@@ -166,7 +166,7 @@ stoch_growth <- function(S_t0, G_t0, R_t0)
   loglambsim <- mean(r)
   disperser_pop = agouti_vec[length(agouti_vec)] #storing the last value in the animal pop list
   
-  return(list("dispPop" = disperser_pop,"growthRate"= exp(loglambsim), "PlantPop"= plant_pop))
+  return(list("dispPop" = disperser_pop,"growthRate"= exp(loglambsim), "PlantPop"= N))
 }
 #-------------------------------------------------------------------------------------------
 
