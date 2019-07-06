@@ -204,16 +204,16 @@ library(akima)
 library(colorspace)
 
 par(bg=NA)
-filled.contour(x = delta_p_seq, 
-               y = delta_d_seq,
+filled.contour(x = delta_d_seq, 
+               y = delta_p_seq,
                z = disPop_Array,
                color.palette = diverge_hcl ,plot.title = title(
                  xlab = expression(delta[d]),
                  ylab = expression(delta[p])),
                  key.title = title(main = "Disp. Pop.", cex.main = 0.9)) 
 
-filled.contour(x = delta_p_seq, 
-               y = delta_d_seq,
+filled.contour(x = delta_d_seq, 
+               y = delta_p_seq,
                z = stoch_growthArray,
                color.palette = diverge_hcl ,plot.title = title(
                  xlab = expression(delta[d]),
