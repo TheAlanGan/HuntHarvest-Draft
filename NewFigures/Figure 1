@@ -184,11 +184,6 @@ R_t_vals <- seq(0.1, 0.95, length.out=20)
 N<- c()
 plant_population<- c()
 
-# create all possible combinations of S and R
-# multiplier_vals <- expand.grid(S_t_vals, R_t_vals) 
-# We could use expand.grid (like Charlotte showed in her example), but
-# from the way this program was written, it's easier to use two loops. 
-
 multiplier_vals <- expand.grid(S_t_vals, R_t_vals) # create all possible combinations of S and R
 set.seed(8)
 for (i in 1:nrow(multiplier_vals)) {
