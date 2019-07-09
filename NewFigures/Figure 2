@@ -120,25 +120,12 @@ stoch_growth <- function(delta_d, delta_p)
   #agouti_vec <- c(agoutiCapacity)* (1-delta_d*.99)
   agouti_vec <- c(agoutiCapacity)
   
-  
-  harvest_seq <- markovChain()
-  
+
   for (i in 1:maxt)
   {
-    #h_i <- harvest_seq[i]
     
-   # if (h_i == "low") 
-  #{
-      #pmat <- plant_mat_low
-    #} 
-    
-    #else 
-    #{
-      pmat <- plant_mat_high
-  #  }
-    
+    pmat <- plant_mat_high
     h_off <- highHunting
-    
     
     prevN <- sum(plant_mat)
     
@@ -169,54 +156,44 @@ stoch_growth <- function(delta_d, delta_p)
 }
 
 #===========================================================================
-delta_p_seq <- seq(0, 1, 0.05)
-delta_d_seq <- seq(0, 1, 0.05)
+set.seed(8)
+delta_p_seq <- seq(0.1, 0.95, length.out=20)
+delta_d_seq <- seq(0.1, 0.95, length.out=20)
 
-stoch_growthArray<- array(0, dim=c(length(delta_p_seq), length(delta_d_seq)))
-disPop_Array<- array(0,dim=c(length(delta_p_seq), length(delta_d_seq)))
+stoch_growthArray<- c()
+disPop_Array<- c()
 
+multiplier_vals <- expand.grid(delta_d_seq, delta_p_seq) # create all possible combinations
+set.seed(8)
 
-numDelta_p<- 1
-numDelta_d<- 1
-
-output<- stoch_growth(1,1)
-for(i in delta_d_seq){
+for(i in 1:nrow(multiplier_vals)){
   
-  numDelta_p<- 1
-
-  for(j in delta_p_seq)
-  {
-      output <- stoch_growth(i,j)
-      growthRate<- output$growthRate
-      dis_pop = output$dispPop
-      stoch_growthArray[numDelta_p,numDelta_d]<-growthRate
-      disPop_Array[numDelta_p,numDelta_d] <- dis_pop
-
-      numDelta_p <- numDelta_p+1
+    delta_d_seq <- multiplier_vals[i,1]
+    delta_p_seq <- multiplier_vals[i,2]
+  
+    output <- stoch_growth(delta_d_seq,delta_p_seq)
+    stoch_growthArray[i]<- output$growthRate
+    disPop_Array[i] = output$dispPop
   }
-  
-  numDelta_d<- numDelta_d+1
-  
-}
+
 
 #==============================================================================================================================================
-library(akima)
-library(colorspace)
+plot_df <- data.frame(delta_d_seq = multiplier_vals[,1],
+                      delta_p_seq = multiplier_vals[,2],
+                      N = disPop_Array,
+                      Lambda= stoch_growthArray)
+library(ggplot2)
+p <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=Lambda))
+p <- p + geom_tile() 
+p <- p + labs(x=expression(delta[d]),y=expression(delta[p])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
+p<- p + labs(fill= expression(paste("Growth Rate(",lambda,")")))
+p
 
-par(bg=NA)
-filled.contour(x = delta_d_seq, 
-               y = delta_p_seq,
-               z = disPop_Array,
-               color.palette = diverge_hcl ,plot.title = title(
-                 xlab = expression(delta[d]),
-                 ylab = expression(delta[p])),
-                 key.title = title(main = "Disp. Pop.", cex.main = 0.9)) 
 
-filled.contour(x = delta_d_seq, 
-               y = delta_p_seq,
-               z = stoch_growthArray,
-               color.palette = diverge_hcl ,plot.title = title(
-                 xlab = expression(delta[d]),
-                 ylab = expression(delta[p])),
-               key.title = title(main =expression(lambda), cex.main = 0.9)) 
+library(ggplot2)
+s <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=N))
+s <- s + geom_tile() 
+s <- s + labs(x=expression(delta[d]),y=expression(delta[p])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
+s<- s + labs(fill= expression(paste("Disperser Population (",N,")")))
+s
 
