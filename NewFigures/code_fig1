@@ -251,6 +251,38 @@ filled.contour(x = S_t_vals,
                key.title = title(main =expression(lambda), cex.main = 0.9)) 
 
 
+
+library(plotly)
+ax <- list(
+  title = "Hunting",
+  zeroline = FALSE,
+  showline = FALSE,
+  showticklabels = TRUE,
+  showgrid = FALSE
+)
+ay <- list(
+  title = "Harvest",
+  zeroline = FALSE,
+  showline = FALSE,
+  showticklabels = TRUE,
+  showgrid = FALSE
+)
+
+p<-plot_ly(
+  x = hunt_seq,
+  y = harvest_seq, 
+  z = t(stoch_growthArray), 
+  type = "contour",
+  colorscale = 'Viridis')%>%
+  layout(xaxis = ax, yaxis = ax, showlegend = FALSE) %>%
+  layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
+  layout(paper_bgcolor='transparent') %>%
+  colorbar(title = "Stochastic \n growth rate")
+
+p
+
+
+
 #Different color pattern
 #Color Options: https://community.plot.ly/t/what-colorscales-are-available-in-plotly-and-which-are-the-default/2079
 #Plot_ly options: https://plot.ly/r/contour-plots/
