@@ -277,8 +277,8 @@ p<-plot_ly(
   layout(xaxis = ax, yaxis = ax, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = "Stochastic \n growth rate")
-
+  colorbar(title = "Stochastic \n growth rate", x= 0.99, y=0.54, len=1.12)
+#Colorbar options: https://plot.ly/r/reference/#bar-marker-colorbar-len
 p
 
 
