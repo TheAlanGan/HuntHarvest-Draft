@@ -228,3 +228,48 @@ filled.contour(x = hunt_seq,
                  ylab = "Harvest"),
                key.title = title(main =expression(lambda), cex.main = 0.9))
 
+
+
+library(plotly)
+ax <- list(
+  title = "Hunting",
+  zeroline = FALSE,
+  showline = FALSE,
+  showticklabels = TRUE,
+  showgrid = FALSE
+)
+ay <- list(
+  title = "Harvest",
+  zeroline = FALSE,
+  showline = FALSE,
+  showticklabels = TRUE,
+  showgrid = FALSE
+)
+
+p<-plot_ly(
+  x = hunt_seq,
+  y = harvest_seq, 
+  z = t(stoch_growthArray), 
+  type = "contour",
+  colorscale = 'Viridis')%>%
+  layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
+  layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
+  layout(paper_bgcolor='transparent') %>%
+  colorbar(title = "Stochastic \n growth rate", x= 0.99, y=0.54, len=1.12)
+#Colorbar options: https://plot.ly/r/reference/#bar-marker-colorbar-len
+p
+
+q<-plot_ly(
+  x = hunt_seq,
+  y = harvest_seq, 
+  z = t(disp_pop), 
+  type = "contour",
+  colorscale = 'Viridis')%>%
+  layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
+  layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
+  layout(paper_bgcolor='transparent') %>%
+  colorbar(title = "Disperser Population", x= 0.99, y=0.54, len=1.12)
+#Colorbar options: https://plot.ly/r/reference/#bar-marker-colorbar-len
+q
+
+
