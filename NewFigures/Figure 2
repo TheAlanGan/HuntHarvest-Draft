@@ -185,7 +185,7 @@ plot_df <- data.frame(delta_d_seq = multiplier_vals[,1],
 library(ggplot2)
 p <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=Lambda))
 p <- p + geom_tile() 
-p <- p + labs(x=expression(delta[d]),y=expression(delta[p])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
+p <- p + labs(x=expression(delta["d,p"]),y=expression(delta["p,d"])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
 p<- p + labs(fill= expression(paste("Growth Rate(",lambda,")")))
 p
 
@@ -193,7 +193,7 @@ p
 library(ggplot2)
 s <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=N))
 s <- s + geom_tile() 
-s <- s + labs(x=expression(delta[d]),y=expression(delta[p])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
+s <- s + labs(x=expression(delta["d,p"]),y=expression(delta["p,d"])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
 s<- s + labs(fill= expression(paste("Disperser Population (",N,")")))
 s
 
