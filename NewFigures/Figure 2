@@ -30,10 +30,10 @@ library("heatmaply")
 ### Model Parameters
 ##================================================================================
 
-highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest (G_t)
+highHarvestFecundity <- 0.9 # Multiplier for fecundity rate for Adult trees under HIGH harvest (G_t)
 highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest (S_t)
 agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model (Rmax)
-highHunting <- 0.25 # Percentage of agoutis hunted during HIGH hunting (R^)
+highHunting <- 0.3 # Percentage of agoutis hunted during HIGH hunting (R^)
 
 #Carrying Capacities. Tree capacities don't matter as much ??!!!!
 seedlingCapacity <- 5000 
