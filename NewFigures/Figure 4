@@ -244,18 +244,22 @@ p<-plot_ly(
   y = harvest_seq, 
   z = t(stoch_growthArray), 
   type = "contour",
+  width = 700, height = 600,
   colorscale = 'Greens')%>%
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = '\u3bb', x= 1, y=0.52, len=1.08)
+  #layout(width = 500, height = 500) %>%
+  colorbar(title = '\u3bb',  x= 1, y=0.52, len=1.08)
 p
+
 
 q<-plot_ly(
   x = hunt_seq,
   y = harvest_seq, 
   z = t(disp_pop), 
   type = "contour",
+  width = 700, height = 600,
   colorscale = 'YlGnBu')%>%
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
