@@ -226,19 +226,18 @@ for(k in hunt_seq)
 library(plotly)
 ax <- list(
   title = "Hunting",
-  zeroline = FALSE,
-  showline = FALSE,
-  showticklabels = TRUE,
-  showgrid = FALSE
+  linecolor = toRGB("black"),
+  linewidth = 2,
+  mirror = "ticks"
 )
 ay <- list(
   title = "Harvest",
-  zeroline = FALSE,
-  showline = FALSE,
-  showticklabels = TRUE,
-  showgrid = FALSE
+  linecolor = toRGB("black"),
+  linewidth = 2,
+  mirror = "ticks"
 )
 
+#Colorbar options: https://bl.ocks.org/pstuffa/d5934843ee3a7d2cc8406de64e6e4ea5
 
 p<-plot_ly(
   x = hunt_seq,
@@ -249,9 +248,8 @@ p<-plot_ly(
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = '\u3bb', x= 0.99, y=0.54, len=1.12)
+  colorbar(title = '\u3bb', x= 1, y=0.52, len=1.08)
 p
-
 
 q<-plot_ly(
   x = hunt_seq,
@@ -262,7 +260,5 @@ q<-plot_ly(
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = "Disperser \n Population", x= 0.99, y=0.54, len=1.12)
-#Colorbar options: https://bl.ocks.org/pstuffa/d5934843ee3a7d2cc8406de64e6e4ea5
+  colorbar(title = "Disperser \n Population", x= 1, y=0.54, len=1.11)
 q
-
