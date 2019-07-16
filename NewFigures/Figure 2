@@ -191,7 +191,8 @@ plot_ly(
   colorscale = 'Viridis')%>% 
   layout(
     xaxis = list( title = paste('\u3b4<sub>d,p')),
-    yaxis = list(title = paste('\u3b4<sub>p,d'))) 
+    yaxis = list(title = paste('\u3b4<sub>p,d')))%>%
+  colorbar(title = '\u3bb')
 
 
 
