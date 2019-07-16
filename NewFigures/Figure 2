@@ -158,26 +158,36 @@ delta_d_seq = multiplier_vals[,1]
 delta_p_seq = multiplier_vals[,2]
 
 library(plotly)
+ax <- list(
+  title = paste('\u3b4<sub>d,p'),
+  linecolor = toRGB("black"),
+  linewidth = 2,
+  mirror = "ticks")
 
-plot_ly(
+ay <- list(
+  title = paste('\u3b4<sub>p,d'),
+  linecolor = toRGB("black"),
+  linewidth = 2,
+  mirror = "ticks")
+
+p<-plot_ly(
   x = delta_d_seq,
   y = delta_p_seq, 
   z = stoch_growthArray, 
   type = "contour", colorscale = 'Greens')%>% 
-  layout(
-    xaxis = list( title = paste('\u3b4<sub>d,p')),
-    yaxis = list(title = paste('\u3b4<sub>p,d')))%>% 
-  colorbar(title = '\u3bb')
+  layout(xaxis = ax, yaxis = ay) %>%
+  layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
+  layout(paper_bgcolor='transparent') %>%
+  colorbar(title = '\u3bb', x= 1, y=1.06, len=1.08)
 
-plot_ly(
+
+q<-plot_ly(
   x = delta_d_seq,
   y = delta_p_seq, 
   z = disPop_Array, 
   type = "contour",
   colorscale = 'YlGnBu')%>% 
-  layout(
-    xaxis = list( title = paste('\u3b4<sub>d,p')),
-    yaxis = list(title = paste('\u3b4<sub>p,d')))%>% 
-  colorbar(title = "Disperser Population")
-
-  
+  layout(xaxis = ax, yaxis = ay) %>%
+  layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
+  layout(paper_bgcolor='transparent') %>%
+  colorbar(title = "Disperser \n Population",x= 1, y=1.06, len=1.08)
