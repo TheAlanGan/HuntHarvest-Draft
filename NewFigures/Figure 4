@@ -251,12 +251,11 @@ p<-plot_ly(
   y = harvest_seq, 
   z = t(stoch_growthArray), 
   type = "contour",
-  colorscale = 'Viridis')%>%
+  colorscale = 'Greens')%>%
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = "Stochastic \n growth rate", x= 0.99, y=0.54, len=1.12)
-#Colorbar options: https://plot.ly/r/reference/#bar-marker-colorbar-len
+  colorbar(title = '\u3bb', x= 0.99, y=0.54, len=1.12)
 p
 
 q<-plot_ly(
