@@ -120,7 +120,7 @@ stoch_growth <- function(delta_d, delta_p)
   #agouti_vec <- c(agoutiCapacity)* (1-delta_d*.99)
   agouti_vec <- c(agoutiCapacity)
   
-
+  
   for (i in 1:maxt)
   {
     
@@ -168,32 +168,55 @@ set.seed(8)
 
 for(i in 1:nrow(multiplier_vals)){
   
-    delta_d_seq <- multiplier_vals[i,1]
-    delta_p_seq <- multiplier_vals[i,2]
+  delta_d_seq <- multiplier_vals[i,1]
+  delta_p_seq <- multiplier_vals[i,2]
   
-    output <- stoch_growth(delta_d_seq,delta_p_seq)
-    stoch_growthArray[i]<- output$growthRate
-    disPop_Array[i] = output$dispPop
-  }
+  output <- stoch_growth(delta_d_seq,delta_p_seq)
+  stoch_growthArray[i]<- output$growthRate
+  disPop_Array[i] = output$dispPop
+}
+#==============================================================================================================================================
+delta_d_seq = multiplier_vals[,1]
+delta_p_seq = multiplier_vals[,2]
+
+library(plotly)
+
+
+
+plot_ly(
+  x = delta_d_seq,
+  y = delta_p_seq, 
+  z = stoch_growthArray, 
+  type = "contour",
+  colorscale = 'Viridis')%>% 
+  layout(
+    xaxis = list( title = paste('\u3b4<sub>p,d')),
+    yaxis = list(title = paste('\u3b4<sub>d,p'))) 
+
+
+
+
+
+
+
 
 
 #==============================================================================================================================================
-plot_df <- data.frame(delta_d_seq = multiplier_vals[,1],
-                      delta_p_seq = multiplier_vals[,2],
-                      N = disPop_Array,
-                      Lambda= stoch_growthArray)
-library(ggplot2)
-p <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=Lambda))
-p <- p + geom_tile() 
-p <- p + labs(x=expression(delta["d,p"]),y=expression(delta["p,d"])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
-p<- p + labs(fill= expression(paste("Growth Rate(",lambda,")")))
-p
-
-
-library(ggplot2)
-s <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=N))
-s <- s + geom_tile() 
-s <- s + labs(x=expression(delta["d,p"]),y=expression(delta["p,d"])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
-s<- s + labs(fill= expression(paste("Disperser Population (",N,")")))
-s
-
+# # plot_df <- data.frame(delta_d_seq = multiplier_vals[,1],
+#                       delta_p_seq = multiplier_vals[,2],
+#                       N = disPop_Array,
+#                       Lambda= stoch_growthArray)
+# library(ggplot2)
+# p <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=Lambda))
+# p <- p + geom_tile() 
+# p <- p + labs(x=expression(delta["d,p"]),y=expression(delta["p,d"])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
+# p<- p + labs(fill= expression(paste("Growth Rate(",lambda,")")))
+# p
+# 
+# 
+# library(ggplot2)
+# s <-  ggplot(plot_df, aes(x=delta_d_seq, y=delta_p_seq, fill=N))
+# s <- s + geom_tile() 
+# s <- s + labs(x=expression(delta["d,p"]),y=expression(delta["p,d"])) + coord_fixed(1) + scale_fill_viridis_c(option="viridis") + theme_bw() + theme(legend.position="top",legend.key.size = unit(1, 'cm'))
+# s<- s + labs(fill= expression(paste("Disperser Population (",N,")")))
+# s
