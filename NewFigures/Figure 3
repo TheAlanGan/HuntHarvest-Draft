@@ -11,13 +11,6 @@ library(sensitivity)
 library(boot)
 library(lhs)
 
-# highHarvestFecundity <- 1 # Multiplier for fecundity rate for Adult trees under HIGH harvest
-# highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
-# agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
-# 
-# lowHunting <- 0.1 # Percentage of agoutis hunted during LOW hunting
-# highHunting <- 0.25 # Percentage of agoutis hunted during HIGH hunting
-
 seedlingCapacity <- 5000 # Carrying Capacities. Tree capacities don't matter as much.
 saplingCapacity <- 500
 adultCapacity <- 100
@@ -30,28 +23,8 @@ saplingInit <- perc * saplingCapacity#500
 adultInit <- perc * adultCapacity#100
 agoutiInit <- perc * agoutiCapacity#5000
 
-# m <- 0.05    # m is the desired proportion at which sigmoid(m) = m . Ideally it is small (~0.01-0.05).
-# agouti_to_PlantSteepness <- -(log(1-m)-log(m))/((m-0.5)*agoutiCapacity) # Steepness needed for sigmoid(m) = m
-# plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepness needed for sigmoid(m) = m
-#This formula above is derived from logistic function with "x = m*CAP" , "x0 = .5*CAP" , "y = m" , and solving for k. (CAP = carrying capacity)
-
 time_end <- 500 # Length of simulation in years
 maxt <- 500 # Length of simulation for stoch_growth function.
-
-#brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
-
-# high_harv <- matrix(1, nrow = 17, ncol = 17)
-
-##=======The Original 17-Stage Matrix from Zuidema and high-harvest multiplier
-# plant_S_mat <- matrix( 0, nrow = 17, ncol = 17)
-# diag(plant_S_mat) <- c(0.455, 0.587, 0.78, 0.821, 0.941, 0.938, 0.961, 0.946, 0.94, 0.937, 0.936, 0.966, 0.968, 0.971, 0.965, 0.967, 0.985)
-# plant_S_mat[cbind(2:17,1:16)] <- matrix(c(0.091, 0.147, 0.134, 0.167, 0.044, 0.047, 0.034, 0.049, 0.055, 0.058, 0.059, 0.029, 0.027, 0.024, 0.020, 0.018))
-# plant_S_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
-# high_harv[1,12:17] <- highHarvestFecundity 
-# high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
-# plant_mat_low <- plant_S_mat
-# plant_mat_high <- plant_S_mat * high_harv
-
 
 #===========================================================================
 #============FUNCTIONS======================================================
@@ -98,10 +71,6 @@ markovChain<- function(tEnd){
   return(harvest_seq)
 }
 
-#harvest_seq <- markovChain(time_end)
-
-
-
 
 ###=====================================================================
 
@@ -128,7 +97,8 @@ plant_sobol <- function(X) # X is matrix of parameters. Columns are each paramet
   
   numSamples <- nrow(X)
   stochGrowthRates <- numeric(numSamples)
-  popAfterTime <- numeric(numSamples)
+  plantPopAfterTime <- numeric(numSamples)
+  
   
   for (i in 1:numSamples)
   {
@@ -215,15 +185,13 @@ plant_sobol <- function(X) # X is matrix of parameters. Columns are each paramet
     }
     
     #    stochGrowthRates[i] <- exp(mean(r)) # Collect growth rates into column vector
-    popAfterTime[i] <- N # Plant population after time. (not animals)
+    plantPopAfterTime[i] <- N # Plant population after time. (not animals)
     
   }
   #  return(stochGrowthRates)
-  return(popAfterTime)
+  return(plantPopAfterTime)
   
 }
-
-
 
 animal_sobol <- function(X) # X is matrix of parameters. Columns are each parameter. Rows are different parameter sets.
 {
@@ -365,22 +333,22 @@ indicesFirstPlant <- (fastPlant$D1 / fastPlant$V)
 indicesFirstAnimal <- (fastAnimal$D1 / fastAnimal$V)
 
 data <- data.frame(indicesFirstPlant, indicesFirstAnimal)
-factList <- c('m', expression(delta[a]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K[2]), expression(delta[p]))
+factList <- c('m', expression(delta["d,p"]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K["a"]), expression(delta["p,d"]))
 counts <- table(indicesFirstPlant, indicesFirstAnimal)
-barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,0.6), legend.text = c('Plant', 'Animal'), xlab = 'Parameters', main = "First-Order Sobol Indices", col = c('yellowgreen', 'coral1'))
+barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,0.6), legend.text = c('Plant', 'Animal'), xlab = 'Parameters', ylab = 'First-Order Indices', col = c('yellowgreen', 'brown'))
 par(bg='white')
 dev.copy(png, 'SobolNoBackground.png')
 dev.off()
 
 
 # Plotting total-order indices
-indicesTotalPlant <- (1 - fastPlant$Dt / fastPlant$V-indicesFirstPlant)
-indicesTotalAnimal <- (1 - fastAnimal$Dt / fastAnimal$V-indicesFirstAnimal)
+indicesTotalPlant <- (1 - fastPlant$Dt / fastPlant$V)
+indicesTotalAnimal <- (1 - fastAnimal$Dt / fastAnimal$V)
 
 data <- data.frame(indicesTotalPlant, indicesTotalAnimal)
-factList <- c('m', expression(delta[a]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K[2]), expression(delta[p]))
+factList <- c('m', expression(delta["d,p"]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K["a"]), expression(delta["p,d"]))
 counts <- table(indicesTotalPlant, indicesTotalAnimal)
-barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,1.0), legend.text = c('Plant', 'Animal'), xlab = 'Parameters', main = "Total-Order Sobol Indices", col = c('yellowgreen', 'coral1'))
+barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,1.2), legend.text = c('Plant', 'Animal'), xlab = 'Parameters', ylab= "Total-Order Indices", col = c('yellowgreen', 'brown'))
 par(bg='white')
 dev.copy(png, 'SobolNoBackground.png')
 dev.off()
