@@ -189,10 +189,9 @@ q<-plot_ly(
   z = disPop_Array, 
   type = "contour",
   width = 700, height = 600,
-  colors = colorRamp(c("white", "brown")) )%>%
+  colors = colorRamp(c("brown", "white")) )%>%
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
   colorbar(title = "Disperser \n Population",x= 1, y=1.06, len=1.08)
-  
- 
+
