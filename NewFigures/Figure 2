@@ -186,7 +186,7 @@ q<-plot_ly(
   y = delta_p_seq, 
   z = disPop_Array, 
   type = "contour",
-  colorscale = 'YlGnBu')%>% 
+  colorscale = '#8c564b')%>%  # brown, maybe? consistent with other colors used, can change if you dont agree!
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
