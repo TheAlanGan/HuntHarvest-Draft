@@ -174,7 +174,9 @@ p<-plot_ly(
   x = delta_d_seq,
   y = delta_p_seq, 
   z = stoch_growthArray, 
-  type = "contour", colorscale = 'Greens')%>% 
+  type = "contour", 
+  width = 700, height = 600,
+  colorscale = 'Greens')%>% 
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
@@ -186,8 +188,11 @@ q<-plot_ly(
   y = delta_p_seq, 
   z = disPop_Array, 
   type = "contour",
-  colorscale = '#8c564b')%>%  # brown, maybe? consistent with other colors used, can change if you dont agree!
+  width = 700, height = 600,
+  colors = colorRamp(c("white", "brown")) )%>%
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
   colorbar(title = "Disperser \n Population",x= 1, y=1.06, len=1.08)
+  
+ 
