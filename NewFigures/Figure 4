@@ -253,14 +253,13 @@ p<-plot_ly(
   colorbar(title = '\u3bb',  x= 1, y=0.52, len=1.08)
 p
 
-
 q<-plot_ly(
   x = hunt_seq,
   y = harvest_seq, 
   z = t(disp_pop), 
   type = "contour",
   width = 700, height = 600,
-  colorscale = 'YlGnBu')%>%
+  colors = colorRamp(c("white", "brown")) )%>%
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
