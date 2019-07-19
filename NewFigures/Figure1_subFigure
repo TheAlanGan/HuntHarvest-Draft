@@ -145,7 +145,7 @@ stoch_growth <- function(){
      h_off <- highHunting
     
     NPrev<- sum(plant_mat)
-    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.4+0.6 # bounded between 0.9 and 1.0.... k was 0.1
+    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.5+0.5 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     if (agouti_vec[j+1] < 0)
     {
