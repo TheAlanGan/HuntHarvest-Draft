@@ -30,10 +30,10 @@ library("heatmaply")
 ### Model Parameters
 ##================================================================================
 
-highHarvestFecundity <- 0.9 # Multiplier for fecundity rate for Adult trees under HIGH harvest (G_t)
+highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest (G_t)
 highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest (S_t)
 agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model (Rmax)
-highHunting <- 0.3 # Percentage of agoutis hunted during HIGH hunting (R^)
+highHunting <- 0.35 # Percentage of agoutis hunted during HIGH hunting (R^)
 
 #Carrying Capacities. Tree capacities don't matter as much ??!!!!
 seedlingCapacity <- 5000 
@@ -157,6 +157,7 @@ for(i in 1:nrow(multiplier_vals)){
 delta_d_seq = multiplier_vals[,1]
 delta_p_seq = multiplier_vals[,2]
 
+
 library(plotly)
 ax <- list(
   title = paste('\u3b4<sub>d,p'),
@@ -176,12 +177,13 @@ p<-plot_ly(
   z = stoch_growthArray, 
   type = "contour", 
   width = 700, height = 600,
-  colorscale = 'Greens')%>% 
+  colors = colorRamp(c('darkgreen', "white")))%>% 
   layout(xaxis = ax, yaxis = ay) %>%
-  layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
+  layout(plot_bgcolor='rgb(0, 75, 0)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = '\u3bb', x= 1, y=1.06, len=1.08)
+  colorbar(title ='Plant \nGrowth (\u3bb)', x= 1, y=1.06, len=1.045)
 
+p
 
 q<-plot_ly(
   x = delta_d_seq,
@@ -193,5 +195,5 @@ q<-plot_ly(
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = "Disperser \n Population",x= 1, y=1.06, len=1.08)
-
+  colorbar(title =  'N<sub>disp',x= 1, y=1.06, len=1.08)
+q
