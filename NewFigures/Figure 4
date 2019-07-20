@@ -95,7 +95,7 @@ LogisticGrowthHunt<- function(R, N, K, H, p)
 # Specifying the markov chain
 library('markovchain')
 markovChain<- function(){
-
+  
   statesNames = c("low","high")
   mcHarvest <- new("markovchain", states = statesNames,
                    transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE,
@@ -126,13 +126,13 @@ simulation <- function(){
     
     if (h_i == "low") 
     {
-    pmat <- plant_mat_low
-    h_off <- lowHunting
-     } 
+      pmat <- plant_mat_low
+      h_off <- lowHunting
+    } 
     else 
     {
-    pmat <- plant_mat_high
-    h_off <- highHunting
+      pmat <- plant_mat_high
+      h_off <- highHunting
     }
     
     NPrev<- sum(plant_mat)
@@ -187,8 +187,8 @@ for(k in hunt_seq)
     
     plant_mat_low <- plant_S_mat
     plant_mat_high <- plant_S_mat * high_harv #Generates the matrix of the brazil nut under high Harvest
-                                              #With different values of Germination Multiplier
-                                              #Multiplier for survival 
+    #With different values of Germination Multiplier
+    #Multiplier for survival 
     output<- simulation()
     disPop <- output$dispPop
     growthRate<- output$growthRate 
@@ -245,12 +245,12 @@ p<-plot_ly(
   z = t(stoch_growthArray), 
   type = "contour",
   width = 700, height = 600,
-  colorscale = 'Greens')%>%
+  colors = colorRamp(c('darkgreen', "white")))%>% 
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
   #layout(width = 500, height = 500) %>%
-  colorbar(title = '\u3bb',  x= 1, y=0.52, len=1.08)
+  colorbar(title = ' Plant \nGrowth \u3bb',  x= 1, y=0.52, len =1.09)
 p
 
 q<-plot_ly(
@@ -259,9 +259,10 @@ q<-plot_ly(
   z = t(disp_pop), 
   type = "contour",
   width = 700, height = 600,
-  colors = colorRamp(c("white", "brown")) )%>%
+  colors = colorRamp(c("brown", "white")) )%>%
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title = "Disperser \n Population", x= 1, y=0.54, len=1.11)
+  colorbar(title =  'N<sub>disp',x= 1, y=0.52, len=1.08)
 q
+
