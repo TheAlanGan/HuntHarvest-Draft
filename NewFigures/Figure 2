@@ -195,5 +195,6 @@ q<-plot_ly(
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title =  'N<sub>disp',x= 1, y=1.06, len=1.08)
+  colorbar(title =  'N<sub>disp',x= 1, y=1.06, len=1.045)
 q
+
