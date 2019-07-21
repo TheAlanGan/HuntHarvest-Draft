@@ -99,8 +99,8 @@ stoch_growth <- function(){
   
   for (i in 1:maxt)
   {
-     pmat <- plant_t0_high
-     h_off <- constHunt
+    pmat <- plant_t0_high
+    h_off <- constHunt
     
     NPrev<- sum(plant_t0)
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_t0[12:17]))*.5+0.5 # bounded between 0.9 and 1.0.... k was 0.1
@@ -119,13 +119,13 @@ stoch_growth <- function(){
     
     N <- sum(plant_t0)
     r[i] <- log(N/NPrev)
-
+    
   }
   
   loglambsim <- mean(r)
   disperser_pop = agouti_vec[length(agouti_vec)] #storing the last value in the animal pop list
   
-
+  
   
   return(list("dispPop" = disperser_pop,"growthRate"= exp(loglambsim)))
 }
@@ -158,12 +158,16 @@ for(j in xseq){
 
 
 #par(bg=NA)
-plot(xseq,growthRate_mat, xlab="Harvesting Regime (Hunting and Harvest)", ylab=expression(paste("Stochastic Growth Rate (",lambda,")")), cex= 0.1,  xlim= c(0,0.6) )
+plot(xseq,growthRate_mat, xlab="Harvesting Regime (Harvest & Hunting)", ylab=expression(paste("Stochastic Growth Rate (",lambda,")")), cex= 0.1,  xlim= c(0,0.6) )
 abline(1,0, lty = 2)
-abline(v=0.107,lty = 2)
+abline(v=0.110,lty = 2)
+text(x=0.110, y=0.969, "*", cex=3)
 dev.copy(png,"Hunting_PlantGrowthRate.png")
 dev.off()
 
-plot(xseq,animal_pop_mat, xlab="Harvesting Regime (Hunting and Harvest)", ylab="Disperser population (Proportion of carrying capacity)", cex= 0.1 , xlim= c(0,0.6))
+plot(xseq,animal_pop_mat, xlab="Harvesting Regime (Harvest & Hunting)", ylab="Disperser population (Proportion of carrying capacity)", cex= 0.1 , xlim= c(0,0.6))
+abline(0.5,0, lty = 2)
+abline(v=0.125,lty = 2)
+text(x=0.125, y=0, "*", cex=3)
 dev.copy(png,"Hunting_PlantGrowthRate.png")
 dev.off()
