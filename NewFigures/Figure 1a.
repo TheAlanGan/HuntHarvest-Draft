@@ -4,6 +4,7 @@
 # Contour plot x axis: Harvest
 # Contour plot y axis: Hunting 
 # We are using Brazil nut and Agouti parameter values 
+
 #======================================================================================================================
 ###=======================================================================
 ### Parameters
@@ -22,6 +23,7 @@
 rm(list=ls()) #Removes the data stored in the variables 
 library(colorspace)
 library(akima)
+library(plotly)
 library("heatmaply")
 
 highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees under HIGH harvest
@@ -55,18 +57,18 @@ simulation_time <- 500 # Length of simulation in years
 
 
 ##=======The Original 17-Stage Matrix from Zuidema (2001) and high-harvest multiplier
-plant_S_mat <- matrix( 0, nrow = 17, ncol = 17)
-diag(plant_S_mat) <- c(0.455, 0.587, 0.78, 0.821, 0.941, 0.938, 0.961, 0.946, 0.94, 0.937, 0.936, 0.966, 0.968, 0.971, 0.965, 0.967, 0.985)
-plant_S_mat[cbind(2:17,1:16)] <- matrix(c(0.091, 0.147, 0.134, 0.167, 0.044, 0.047, 0.034, 0.049, 0.055, 0.058, 0.059, 0.029, 0.027, 0.024, 0.020, 0.018))
-plant_S_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
+plant_transition_mat <- matrix( 0, nrow = 17, ncol = 17)
+diag(plant_transition_mat) <- c(0.455, 0.587, 0.78, 0.821, 0.941, 0.938, 0.961, 0.946, 0.94, 0.937, 0.936, 0.966, 0.968, 0.971, 0.965, 0.967, 0.985)
+plant_transition_mat[cbind(2:17,1:16)] <- matrix(c(0.091, 0.147, 0.134, 0.167, 0.044, 0.047, 0.034, 0.049, 0.055, 0.058, 0.059, 0.029, 0.027, 0.024, 0.020, 0.018))
+plant_transition_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
 
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 high_harv[1,12:17] <- highHarvestFecundity 
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
-plant_mat_low <- plant_S_mat
-plant_mat_high <- plant_S_mat * high_harv
+plant_t0_low <- plant_transition_mat
+plant_t0_high <- plant_transition_mat * high_harv
 
-brazilNut <- list(low=plant_mat_low, high=plant_mat_high)
+brazilNut <- list(low=plant_t0_low, high=plant_t0_high)
 
 #===========================================================================
 #============FUNCTIONS======================================================
@@ -109,10 +111,10 @@ markovChain<- function(){
 ##---------------------------------------------------------------------------------------------
 simulation <- function(){
   tree_growthRate <- numeric(simulation_time)
-  plant_mat <- matrix(0, nrow = 17)
-  plant_mat[1:4] <- seedlingInit/4   #Setting initial population of seedlings
-  plant_mat[5:11] <- saplingInit/7   #Setting initial population of saplings
-  plant_mat[12:17] <- adultInit/6  #Setting initial population of adult trees
+  plant_t0 <- matrix(0, nrow = 17)
+  plant_t0[1:4] <- seedlingInit/4   #Setting initial population of seedlings
+  plant_t0[5:11] <- saplingInit/7   #Setting initial population of saplings
+  plant_t0[12:17] <- adultInit/6  #Setting initial population of adult trees
   
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
   agouti_vec <- c(agoutiInit)
@@ -126,17 +128,17 @@ simulation <- function(){
     
     if (h_i == "low") 
     {
-      pmat <- plant_mat_low
+      pmat <- plant_t0_low
       h_off <- lowHunting
     } 
     else 
     {
-      pmat <- plant_mat_high
+      pmat <- plant_t0_high
       h_off <- highHunting
     }
     
-    NPrev<- sum(plant_mat)
-    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_mat[12:17]))*.7+0.3 # bounded between 0.9 and 1.0.... k was 0.1
+    NPrev<- sum(plant_t0)
+    p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_t0[12:17]))*.7+0.3 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
     if(agouti_vec[(i+1)]<0){
       agouti_vec[(i+1)]=0
@@ -144,13 +146,13 @@ simulation <- function(){
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
     plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) # k was 0.0025
     #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
-    plant_mat <- matrix( c((plant_animal_mat * pmat) %*% plant_mat))
+    plant_t0 <- matrix( c((plant_animal_mat * pmat) %*% plant_t0))
     
     #Summing the stages into 3 categories for better plotting
-    plant_mat_sum <- c( sum(plant_mat[1:4]), sum(plant_mat[5:11]), sum(plant_mat[12:17])) 
-    plant_all <- cbind(plant_all, plant_mat_sum)
+    plant_t0_sum <- c( sum(plant_t0[1:4]), sum(plant_t0[5:11]), sum(plant_t0[12:17])) 
+    plant_all <- cbind(plant_all, plant_t0_sum)
     
-    N <- sum(plant_mat)
+    N <- sum(plant_t0)
     tree_growthRate[i] <- log(N/NPrev) #Calculates the stochastic growth during this year.
   }
   
@@ -160,7 +162,6 @@ simulation <- function(){
   return(list("dispPop" = disperser_pop,"growthRate"= exp(loglambsim)))
 }
 #********************************************************************************************************************************************#
-
 #In this program, we vary Harvest and Hunting:
 harvest_seq<- seq(0,0.4, 0.005)  
 hunt_seq<- seq(0,0.8,0.005)
@@ -169,7 +170,7 @@ hunt_seq<- seq(0,0.8,0.005)
 disp_pop<-matrix(0,length(hunt_seq),length(harvest_seq))
 stoch_growthArray<- matrix(0,length(hunt_seq),length(harvest_seq))
 
-#Used for the indexes of the matrix that containing the output values from the simulation
+#Indexes of the matrix used to store the output from the simulation runs
 numRow<-1 
 numCol<-1
 
@@ -179,16 +180,16 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 for(k in hunt_seq)
 {
   numCol<-1
-  highHunting<- k
+  highHunting<- k  #the offate multiplier (R_hat)
   for(l in harvest_seq)
   {
-    high_harv[1,12:17] <- 1-l #Germination Multiplier
-    high_harv[cbind(12:17,12:17)] <- 1-l # Multiplier for survival rate of Adult trees
+    high_harv[1,12:17] <- 1-l #Germination Multiplier,inverse of G_t represents the impact of harvest 
+    high_harv[cbind(12:17,12:17)] <- 1-l # Multiplier for survival rate of Adult trees, inverse of S_t represents the impact of harvest 
     
-    plant_mat_low <- plant_S_mat
-    plant_mat_high <- plant_S_mat * high_harv #Generates the matrix of the brazil nut under high Harvest
-    #With different values of Germination Multiplier
-    #Multiplier for survival 
+    #updates the plant_transition matrix with the new G_t and S_t values under harvest
+    plant_t0_low <- plant_transition_mat
+    plant_t0_high <- plant_transition_mat * high_harv 
+   
     output<- simulation()
     disPop <- output$dispPop
     growthRate<- output$growthRate 
@@ -201,29 +202,8 @@ for(k in hunt_seq)
   numRow<- numRow+1
   
 }
-#### This code creates the blue/red pattern graph.
-#We decided to use Plotly instead.
 
-# library(colorspace)
-# 
-# par(bg=NA)
-# filled.contour(x = hunt_seq, 
-#                y = harvest_seq,
-#                z = disp_pop,
-#                color.palette = diverge_hcl ,plot.title = title(
-#                  xlab = "Hunting",
-#                  ylab = "Harvest"),
-#                key.title = title(main = "Disp_Pop", cex.main = 0.7)) 
-# 
-# filled.contour(x = hunt_seq, 
-#                y = harvest_seq,
-#                z =stoch_growthArray,
-#                color.palette = diverge_hcl ,plot.title = title(
-#                  xlab = "Hunting",
-#                  ylab = "Harvest"),
-#                key.title = title(main =expression(lambda), cex.main = 0.9))
 
-library(plotly)
 ax <- list(
   title = "Hunting",
   linecolor = toRGB("black"),
@@ -239,6 +219,7 @@ ay <- list(
 
 #Colorbar options: https://bl.ocks.org/pstuffa/d5934843ee3a7d2cc8406de64e6e4ea5
 
+# Plotting the plant stochastic growth rate 
 p<-plot_ly(
   x = hunt_seq,
   y = harvest_seq, 
@@ -253,6 +234,7 @@ p<-plot_ly(
   colorbar(title = ' Plant \nGrowth \u3bb',  x= 1, y=0.52, len =1.09)
 p
 
+# Plotting the plant stochastic growth rate 
 q<-plot_ly(
   x = hunt_seq,
   y = harvest_seq, 
@@ -265,4 +247,3 @@ q<-plot_ly(
   layout(paper_bgcolor='transparent') %>%
   colorbar(title =  'N<sub>disp',x= 1, y=0.52, len=1.08)
 q
-
