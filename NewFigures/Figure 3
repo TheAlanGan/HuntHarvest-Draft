@@ -40,7 +40,7 @@ linear <- function(m, x, b)
 
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
-  Nnext <- R*N*(1-N/(K*(p))) - H*N + N
+  Nnext <- (R*N*(1-N/(K*(p))) + N) * (1-H)
   return(Nnext)
 }
 
@@ -75,7 +75,18 @@ markovChain<- function(tEnd){
 # 7.  Adult Plant Carrying Capacity ... [20, 150]
 # 8.  delta_plant ... [0, 1]
 
-plant_sobol <- function(X) # X is matrix of parameters. Columns are each parameter. Rows are different parameter sets.
+
+
+# Function 'plant_sobol'. To be used with Sobol global variance based sensitivity analysis (fast99)
+#
+# Arguments:
+#  - X : (n x 8) matrix. Columns (8) are each parameter. Rows (n) are different parameter sets. 
+#
+# Output:
+#  - plantPopAfterTime : (n x 1) vector. Each row is the total plant population after time 'maxt' for each parameter set from
+#                       input matrix X.
+#
+plant_sobol <- function(X)
 {
   # Function taking in matrix of parameters
   # Returns (nx1) matrix of plant population
@@ -87,14 +98,14 @@ plant_sobol <- function(X) # X is matrix of parameters. Columns are each paramet
   {
     
     # Unpacking parameters from matrix
-    m <- X[i, 1] * (0.1 - 0.03) + 0.03 # Mapping [0,1] to [0.03,0.1]
-    delta<- X[i, 2] # No need for mapping since delta is in [0,1] already
-    highHarvestFecundity <- X[i, 3] * (0.9- 0) + 0 #Mapping to [0.85,1]
-    highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0 # Mapping to [0.9,1]
-    constHunt <- X[i, 5]*(0.57- 0.037)+ 0.037
-    agoutiGrowth <- X[i, 6] * (1.1 - 0.67) + 0.67 # Mapping to [0.67,1.1]
-    adultCapacity <- X[i, 7] * (150 - 20) + 20 # Mapping to [50,150]
-    deltaPlant <- X[i, 8] # No need for mapping
+    m <- X[i, 1] * (0.1 - 0.03) + 0.03                # Mapping [0,1] to [0.03,0.1]
+    delta<- X[i, 2]                                   # No need for mapping since delta is in [0,1] already
+    highHarvestFecundity <- X[i, 3] * (0.9- 0) + 0    # Mapping to [0.85,1]
+    highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0    # Mapping to [0.9,1]
+    constHunt <- X[i, 5]*(0.57- 0.037)+ 0.037         #
+    agoutiGrowth <- X[i, 6] * (1.1 - 0.67) + 0.67     # Mapping to [0.67,1.1]
+    adultCapacity <- X[i, 7] * (150 - 20) + 20        # Mapping to [50,150]
+    deltaPlant <- X[i, 8]                             # No need for mapping
     
     ### Using parameters ###
     # Setting low harvest matrix
@@ -168,6 +179,19 @@ plant_sobol <- function(X) # X is matrix of parameters. Columns are each paramet
   
 }
 
+
+
+
+# Function 'animal_sobol'. To be used with Sobol global variance based sensitivity analysis (fast99)
+#
+# Arguments:
+#  - X : (n x 8) matrix. Columns (8) are each parameter. Rows (n) are different parameter sets. 
+#
+# Output:
+#  - popAfterTime : (n x 1) vector. Each row is the animal population after time 'maxt' for each parameter set from
+#                       input matrix X.
+#
+
 animal_sobol <- function(X) # X is matrix of parameters. Columns are each parameter. Rows are different parameter sets.
 {
   # Function taking in matrix of parameters
@@ -179,13 +203,13 @@ animal_sobol <- function(X) # X is matrix of parameters. Columns are each parame
   for (i in 1:numSamples)
   {
     # Unpacking parameters from matrix
-    m <- X[i, 1] * (0.1 - 0.03) + 0.03 # Mapping [0,1] to [0.03,0.1]
-    deltaDisp <- X[i, 2] # Disperser delta is in [0,1] already
-    highHarvestFecundity <- X[i, 3] * (0.9- 0) + 0 #Mapping to [0,0.9]
-    highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0 # Mapping to [0,0.9]
+    m <- X[i, 1] * (0.1 - 0.03) + 0.03              # Mapping [0,1] to [0.03,0.1]
+    deltaDisp <- X[i, 2]                            # Disperser delta is in [0,1] already
+    highHarvestFecundity <- X[i, 3] * (0.9- 0) + 0  # Mapping to [0,0.9]
+    highHarvestSurvival <- X[i, 4] * (0.9 - 0) + 0  # Mapping to [0,0.9]
     constHunt <- X[i, 5]*(0.57- 0.037)+ 0.037
-    agoutiGrowth <- X[i, 6] * (1.1 - 0.67) + 0.67 # Mapping to [0.67,1.1]
-    adultCapacity <- X[i, 7] * (150 - 20) + 20 # Mapping to [20,150]
+    agoutiGrowth <- X[i, 6] * (1.1 - 0.67) + 0.67   # Mapping to [0.67,1.1]
+    adultCapacity <- X[i, 7] * (150 - 20) + 20      # Mapping to [20,150]
     deltaPlant <- X[i, 8] 
     
     
@@ -259,8 +283,14 @@ animal_sobol <- function(X) # X is matrix of parameters. Columns are each parame
   
 }
 
+
+
+
 ###=====================================================================
-#Fourier Amplitude Sens Test (Saltelli) --- Kinda Working?
+
+#Fourier Amplitude Sens Test (Saltelli)
+# Estimating the Sobol indices using the 'fast99' function from 'sensitivity' package.
+
 fastPlant <- fast99(model = plant_sobol ,factors = 8, n = 10000, q.arg = list(min=0.0, max=1.0))
 print(fastPlant)
 plot(fastPlant)
