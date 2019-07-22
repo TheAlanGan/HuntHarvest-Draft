@@ -1,9 +1,17 @@
 ##=========================================================================================================
-# Script description:
-# For each individual contour plot we are varying harvest (both Gt and St) and hunting (highHunting multiplier) levels
+# Script description: Figure 1
+# Produces two contour plots using plotly:
+# For each individual contour plot we are varying harvest (both Gt and St) and hunting (highHunting multiplier only) levels
 # Contour plot x axis: Harvest
 # Contour plot y axis: Hunting 
+
+
+# Things to note:
 # We are using Brazil nut and Agouti parameter values 
+# We incoporated markov chain as it gave as slightly better looking graphs.
+# The the population did slighlty better with the markov chain. 
+# However, the overall pattern of the contour plot statyed the same with/out the markov.
+# We also tried shifting the legend bar on top of the plot but it was difficult to do when using ploly.
 
 #======================================================================================================================
 ###=======================================================================
@@ -189,7 +197,7 @@ for(k in hunt_seq)
     #updates the plant_transition matrix with the new G_t and S_t values under harvest
     plant_t0_low <- plant_transition_mat
     plant_t0_high <- plant_transition_mat * high_harv 
-   
+    
     output<- simulation()
     disPop <- output$dispPop
     growthRate<- output$growthRate 
