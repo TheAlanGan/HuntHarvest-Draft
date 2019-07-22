@@ -8,7 +8,15 @@
 #  x-axis = Constant high hunting (highHunting multiplier)
 #  y-axis = Disperser population prportion of the disperser carrying capacity
 
+# Things to note:
 # All parameter values are specific to Brazil-nut tree and Agouti 
+# Everything is set constant, the only variables that are being varied - representative of a harvesting regime:
+# G_t and S_t multipliers - harvest 
+# R_hat - offtake multiplier  - hunting
+# All of these variables are being varied togther using the same sequence term.  
+# Also not sure what is the sustainable level (percentage) for a disperser population a proportion of its carrying capacity.
+# In the report, we stated that any disperser pop proportion less than 50% is considersed unsustainable. 
+# No markov chain is present in this code - we can edit if that makes more sense.
 ###====================================================================================================================================
 
 ###====================================================================================================================================
@@ -141,7 +149,7 @@ constHunt<- 0.25
 high_harv[1,12:17] <- highHarvestFecundity 
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
 plant_t0_low <- plant_transition_mat
-plant_t0_high <- plant_transition_mat * high_harv
+plant_t0_high <- plant_transition_mat * high_harv  # plant matrix affected by high harvest
 
 for(j in xseq){
   constHunt<-j
@@ -155,7 +163,6 @@ for(j in xseq){
   animal_pop_mat[num]<- (disp_pop/agoutiCapacity)
   num<-num+1
 }
-
 
 #par(bg=NA)
 plot(xseq,growthRate_mat, xlab="Harvesting Regime (Harvest & Hunting)", ylab=expression(paste("Stochastic Growth Rate (",lambda,")")), cex= 0.1,  xlim= c(0,0.6) )
