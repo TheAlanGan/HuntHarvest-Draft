@@ -11,7 +11,7 @@
 # We incoporated markov chain as it gave as slightly better looking graphs.
 # The the population did slighlty better with the markov chain. 
 # However, the overall pattern of the contour plot statyed the same with/out the markov.
-# We also tried shifting the legend bar on top of the plot but it was difficult to do when using ploly.
+# We also tried shifting the legend bar on top of the plot but it was difficult to do as we are plotting using plotly.
 
 #======================================================================================================================
 ###=======================================================================
