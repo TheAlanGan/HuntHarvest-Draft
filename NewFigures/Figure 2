@@ -7,7 +7,7 @@
 # Constant high hunting 
 
 # We are using Brazil nut and Agouti parameter values 
-# We are not using the markov chain. I - Eeman ran it and the graphs were slightly better looking without the markov chain.
+# We are not using the markov chain. We ran it and the graphs were slightly better looking without the markov chain.
 # The figures in the supplement were produced with only varying the G_t, S_t and R_t multipliers. 
 #================================================================================
 ###==============================================================================
