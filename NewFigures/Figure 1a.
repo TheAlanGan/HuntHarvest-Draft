@@ -8,9 +8,6 @@
 
 # Things to note:
 # We are using Brazil nut and Agouti parameter values 
-# We incoporated markov chain as it gave as slightly better looking graphs.
-# The the population did slighlty better with the markov chain. 
-# However, the overall pattern of the contour plot statyed the same with/out the markov.
 # We also tried shifting the legend bar on top of the plot but it was difficult to do as we are plotting using plotly.
 
 #======================================================================================================================
@@ -38,8 +35,7 @@ highHarvestFecundity <- 0.85 # Multiplier for fecundity rate for Adult trees und
 highHarvestSurvival <- 0.9 # Multiplier for survival rate of Adult trees under HIGH harvest
 agoutiGrowth <- 1.1 # Growth rate of Agoutis in logistic model
 
-lowHunting <- 0.1 # Percentage of agoutis hunted during LOW hunting
-highHunting <- 0.25 # Percentage of agoutis hunted during HIGH hunting
+constHunt <- 0.25# Percentage of agoutis hunted during LOW hunting
 
 # Carrying Capacities for the tree
 seedlingCapacity <- 5000 
@@ -62,8 +58,6 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 
 simulation_time <- 500 # Length of simulation in years
 
-
-
 ##=======The Original 17-Stage Matrix from Zuidema (2001) and high-harvest multiplier
 plant_transition_mat <- matrix( 0, nrow = 17, ncol = 17)
 diag(plant_transition_mat) <- c(0.455, 0.587, 0.78, 0.821, 0.941, 0.938, 0.961, 0.946, 0.94, 0.937, 0.936, 0.966, 0.968, 0.971, 0.965, 0.967, 0.985)
@@ -73,10 +67,7 @@ plant_transition_mat[1,12:17] <- matrix( c(12.3, 14.6, 16.9, 19.3, 22.3, 26.6) )
 high_harv <- matrix(1, nrow = 17, ncol = 17)
 high_harv[1,12:17] <- highHarvestFecundity 
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
-plant_t0_low <- plant_transition_mat
 plant_t0_high <- plant_transition_mat * high_harv
-
-brazilNut <- list(low=plant_t0_low, high=plant_t0_high)
 
 #===========================================================================
 #============FUNCTIONS======================================================
@@ -87,35 +78,17 @@ sigmoid <- function(k, x0, x)
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
 } 
 
-
 linear <- function(m, x, b)
 {
   y <- m*x + b
   return(y)
 }
 
-
 LogisticGrowthHunt<- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
   Nnext <- (R*N*(1-N/(K*(p))) + N) * (1-H)
   return(Nnext)
 }
-
-
-# Specifying the markov chain
-library('markovchain')
-markovChain<- function(){
-  
-  statesNames = c("low","high")
-  mcHarvest <- new("markovchain", states = statesNames,
-                   transitionMatrix = matrix(data = c(0.2, 0.8, 0.8, 0.2), byrow = TRUE,
-                                             nrow = 2, dimnames=list(statesNames,statesNames)), name="Harvest")
-  # Simulating a discrete time process for harvest
-  set.seed(100)
-  harvest_seq <- markovchain::rmarkovchain(n=simulation_time, object = mcHarvest, t0="low")
-  return(harvest_seq)
-}
-
 ##---------------------------------------------------------------------------------------------
 simulation <- function(){
   tree_growthRate <- numeric(simulation_time)
@@ -126,25 +99,14 @@ simulation <- function(){
   
   plant_all <- matrix( c(seedlingInit, saplingInit, adultInit) ) # This will contain the summed plant populations at ALL timesteps
   agouti_vec <- c(agoutiInit)
-  harvest_seq <- markovChain()
-  
+
   #Actual simulation begins here:
-  #First, use Markov chain to select High Havest/Hunting or Low Harvest/Hunting
+ 
   for (i in 1:simulation_time)
   {
-    h_i <- harvest_seq[i]
-    
-    if (h_i == "low") 
-    {
-      pmat <- plant_t0_low
-      h_off <- lowHunting
-    } 
-    else 
-    {
-      pmat <- plant_t0_high
-      h_off <- highHunting
-    }
-    
+    pmat <- plant_t0_high
+    h_off <- constHunt
+
     NPrev<- sum(plant_t0)
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_t0[12:17]))*.7+0.3 # bounded between 0.9 and 1.0.... k was 0.1
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
@@ -188,14 +150,13 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 for(k in hunt_seq)
 {
   numCol<-1
-  highHunting<- k  #the offate multiplier (R_hat)
+  constHunt<- k  #the offate multiplier (R_hat)
   for(l in harvest_seq)
   {
     high_harv[1,12:17] <- 1-l #Germination Multiplier,inverse of G_t represents the impact of harvest 
     high_harv[cbind(12:17,12:17)] <- 1-l # Multiplier for survival rate of Adult trees, inverse of S_t represents the impact of harvest 
     
     #updates the plant_transition matrix with the new G_t and S_t values under harvest
-    plant_t0_low <- plant_transition_mat
     plant_t0_high <- plant_transition_mat * high_harv 
     
     output<- simulation()
@@ -254,4 +215,5 @@ q<-plot_ly(
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
   colorbar(title =  'N<sub>disp',x= 1, y=0.52, len=1.08)
-q
+  q
+  
