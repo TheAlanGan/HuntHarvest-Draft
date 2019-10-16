@@ -173,18 +173,60 @@ for(k in hunt_seq)
 }
 
 
+f2 <- list(
+  family = "Arial, sans-serif",
+  size = 24,
+  color = toRGB("black"))
+
+f1 <- list(
+  family = "Arial, sans-serif",
+  size = 24,
+  color = toRGB("black"))
+
+abar <- list(
+  size=24,
+  color = toRGB("black"))
+)
+
+barFont <- list(
+  family = "Arial, sans-serif",
+  size = 24,
+  color = toRGB("black")
+)
+
+batTtile1 <- list(
+  text = 'N <sub>disperser',
+  font = barFont
+)
+
+batTtile2 <- list(
+  text = ' Plant \nGrowth \u3bb',
+  font = barFont
+)
+
+
+
+
 ax <- list(
+  tickfont = f2,
+  titlefont = f1,
   title = "Hunting",
-  linecolor = toRGB("black"),
-  linewidth = 2,
+  #linecolor = toRGB("black"),
+  linewidth = 3,
+  tickwidth = 3,
   mirror = "ticks"
 )
 ay <- list(
+  tickfont = f2,
+  titlefont = f1,
   title = "Harvest",
-  linecolor = toRGB("black"),
-  linewidth = 2,
+  #linecolor = toRGB("black"),
+  linewidth = 3,
+  tickwidth = 3,
   mirror = "ticks"
 )
+
+
 
 #Colorbar options: https://bl.ocks.org/pstuffa/d5934843ee3a7d2cc8406de64e6e4ea5
 
@@ -200,8 +242,9 @@ p<-plot_ly(
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
   #layout(width = 500, height = 500) %>%
-  colorbar(title = ' Plant \nGrowth \u3bb',  x= 1, y=0.52, len =1.09)
+  colorbar(title=batTtile2,  x= 1, y=0.52, len =1.09,tickfont = abar)
 p
+
 
 # Plotting the plant stochastic growth rate 
 q<-plot_ly(
@@ -214,6 +257,5 @@ q<-plot_ly(
   layout(xaxis = ax, yaxis = ay, showlegend = FALSE) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title =  'N<sub>disp',x= 1, y=0.52, len=1.08)
-  q
-  
+  colorbar(title=batTtile1 ,x= 1, y=0.52, len=1.08, tickfont = abar)
+q
