@@ -185,7 +185,7 @@ f1 <- list(
 
 abar <- list(
   size=24,
-  color = toRGB("black"))
+  color = toRGB("black")
 )
 
 barFont <- list(
