@@ -166,16 +166,54 @@ delta_p_seq = multiplier_vals[,2]
 
 
 library(plotly)
+# These variables are just related to plotly.
+f2 <- list(
+  family = "Arial, sans-serif",
+  size = 24,
+  color = toRGB("black"))
+
+f1 <- list(
+  family = "Arial, sans-serif",
+  size = 24,
+  color = toRGB("black"))
+
+abar <- list(
+  size=24,
+  color = toRGB("black")
+)
+
+barFont <- list(
+  family = "Arial, sans-serif",
+  size = 24,
+  color = toRGB("black")
+)
+
+batTtile1 <- list(
+  text = 'Plant \nGrowth (\u3bb)',
+  font = barFont
+)
+
+batTtile2 <- list(
+  text ='N<sub>disp',
+  font = barFont
+)
+
 ax <- list(
+  tickfont = f2,
+  titlefont = f1,
   title = paste('\u3b4<sub>d,p'),
   linecolor = toRGB("black"),
-  linewidth = 2,
+  linewidth = 3,
+  tickwidth = 3,
   mirror = "ticks")
 
 ay <- list(
+  tickfont = f2,
+  titlefont = f1,
   title = paste('\u3b4<sub>p,d'),
   linecolor = toRGB("black"),
-  linewidth = 2,
+  linewidth = 3,
+  tickwidth = 3,
   mirror = "ticks")
 
 p<-plot_ly(
@@ -188,9 +226,11 @@ p<-plot_ly(
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(0, 75, 0)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title ='Plant \nGrowth (\u3bb)', x= 1, y=1.06, len=1.045)
+  colorbar(title =batTtile1, x= 1, y=1.06, len=1.085,tickfont = abar)
 
 p
+
+
 
 q<-plot_ly(
   x = delta_d_seq,
@@ -202,6 +242,5 @@ q<-plot_ly(
   layout(xaxis = ax, yaxis = ay) %>%
   layout(plot_bgcolor='rgb(254, 247, 234)') %>% 
   layout(paper_bgcolor='transparent') %>%
-  colorbar(title =  'N<sub>disp',x= 1, y=1.06, len=1.045)
+  colorbar(title =batTtile2,x= 1, y=1.035, len=1.059, tickfont = abar)
 q
-
