@@ -79,7 +79,7 @@ plant_t0_high <- plant_transition_mat * high_harv
 # x:  population size
 sigmoid <- function(k, x0, x) 
 {
-  1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
+  1/(1+exp(-k*(x-x0))) 
 } 
 
 #2.3 Discrete-time  disperser logistic growth function
