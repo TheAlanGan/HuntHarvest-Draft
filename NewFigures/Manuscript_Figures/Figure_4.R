@@ -210,7 +210,7 @@ batTtile2 <- list(
 ax <- list(
   tickfont = f2,
   titlefont = f1,
-  title = paste('\u3b4<sub>d,p'),
+  title = paste('\u3b4<sub>p→d'),
   linecolor = toRGB("black"),
   linewidth = 3,
   tickwidth = 3,
@@ -219,7 +219,7 @@ ax <- list(
 ay <- list(
   tickfont = f2,
   titlefont = f1,
-  title = paste('\u3b4<sub>p,d'),
+  title = paste('\u3b4<sub>d→p'),
   linecolor = toRGB("black"),
   linewidth = 3,
   tickwidth = 3,
