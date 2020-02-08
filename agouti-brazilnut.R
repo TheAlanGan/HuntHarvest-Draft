@@ -26,9 +26,6 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 
 time_end <- 1000 # Length of simulation in years
 
-# For linear functional form
-m1 <- 1/agoutiCapacity
-b1 <- 0
 #=========================================================================
 
 
@@ -48,51 +45,6 @@ high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival r
 
 
 
-###===========================================================================
-### Eigenvalues vs. Population of Agoutis
-###===========================================================================
-domEigenvals = c()
-num <- 1
-interval <- 100 # 1720 is point at which eig ~= 1
-for (i in seq(0,5200,interval))
-{
-  plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
-  plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, i)
-#  plant_animal_mat[1,12:17] <- linear(m1, i, b1)
-  plant_matrix <- plant_animal_mat * plant_mat_low
-  
-  eigenvals <- eigen(plant_matrix)$values
-  
-  dominant <- 0
-  for (i in eigenvals)
-  {
-    dominant <- max(sqrt(Re(i*Conj(i))), dominant)
-  }
-  domEigenvals[num] <- dominant
-  
-  num <- num + 1
-}
-
-#plot(seq(0,5200,interval), domEigenvals)
-# 1714 is point at which eig ~= 1, at m = 0.0001
-# 0.4265611 times the carrying capacity (p = 0.42806) is where dN/dt ~= 0 when N = 1714. N is pop of agouti
-# Since p is bounded between 0.9 and 1, it is impossible for  system to die
-
-# 103 is the point at which eig ~= 1, at m = 0.05
-# 0.02563348 times the carrying capacity (of agoutis) is inflection point
-# Since p is bounded between 0.9 and 1, it is impossible for system to die
-
-for (i in 1:length(domEigenvals))
-{
-  if (domEigenvals[i] >= 1 && domEigenvals[i] <= 1.0001)
-  {
-    print(i)
-  }
-}
-###===========================================================================
-
-
-
 ###====================================================================
 ### Plant and animal dynamics under harvest
 ###====================================================================
@@ -106,11 +58,6 @@ sigmoid <- function(k, x0, x)
 } # plant_animal <- matrix(c(1,1,sigmoid(1, K_animal*0.5, N),1,1,1,1,1,1), nrow=3, byrow=T)
 # Animal
 
-linear <- function(m, x, b)
-{
-  y <- m*x + b
-  return(y)
-}
 
 LogisticGrowthHunt <- function(R, N, K, H, p) 
 { # p is how the plant affects carrying capacity of agoutis (from 0 to 1)
