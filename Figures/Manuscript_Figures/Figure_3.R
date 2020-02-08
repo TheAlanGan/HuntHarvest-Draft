@@ -92,13 +92,6 @@ sigmoid <- function(k, x0, x)
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
 } 
 
-#A different functional form that coudl be implemented.
-#It's not used in the paper.
-linear <- function(m, x, b)
-{
-  y <- m*x + b
-  return(y)
-}
 
 #2.3 Discrete-time  disperser logistic growth function
 # R: Growth rate (rmax)
