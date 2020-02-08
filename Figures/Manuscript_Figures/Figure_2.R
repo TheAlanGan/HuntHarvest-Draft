@@ -67,6 +67,7 @@ plant_to_AgoutiSteepness <- -(log(1-m)-log(m))/((m-0.5)*adultCapacity)  # Steepn
 
 simulation_time <- 500 # Length of simulation in years
 
+
 ##=======The Original 17-Stage Matrix from Zuidema (2001) 
 #Note: The original matrix is used as LOW harvesting.
 plant_transition_mat <- matrix( 0, nrow = 17, ncol = 17)
@@ -78,6 +79,7 @@ high_harv <- matrix(1, nrow = 17, ncol = 17)
 high_harv[1,12:17] <- highHarvestFecundity 
 high_harv[cbind(12:17,12:17)] <- highHarvestSurvival # Multiplier for survival rate of Adult trees
 plant_t0_high <- plant_transition_mat * high_harv
+
 
 ###=======================================================================
 ### Functions
@@ -91,14 +93,6 @@ sigmoid <- function(k, x0, x)
   1/(1+exp(-k*(x-x0))) #k: steepness #x0 = midpoint
 } 
 
-#A different functional form that coudl be implemented.
-#It's not used in the paper.
-linear <- function(m, x, b)
-{
-  y <- m*x + b
-  return(y)
-}
-
 
 #2.3 Discrete-time  disperser logistic growth function
 # R: Growth rate (rmax)
@@ -111,6 +105,8 @@ LogisticGrowthHunt<- function(R, N, K, H, p)
   Nnext <- (R*N*(1-N/(K*(p))) + N) * (1-H)
   return(Nnext)
 }
+
+
 
 ###=======================================================================
 ### Simulation Function
@@ -149,14 +145,13 @@ simulation <- function(){
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_t0[12:17]))*.7+0.3 # bounded between 0.3 and 0.7
     #p is then used to calculate the population of agouti for the year i+1.
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
-    #popujlation can't be negative:
+    #population can't be negative:
     if(agouti_vec[(i+1)]<0){
       agouti_vec[(i+1)]=0
     }
     #set up the matrix that will be used to caclualte the population of trees for the year i+1:
     plant_animal_mat <- matrix(1, nrow = 17, ncol = 17)
     plant_animal_mat[1,12:17] <- sigmoid(agouti_to_PlantSteepness, agoutiCapacity/2, agouti_vec[(i)]) 
-    #  plant_animal_mat[1,12:17] <- linear(m, agouti_vec[(i+1)], b) # A different functional form
     plant_t0 <- matrix( c((plant_animal_mat * pmat) %*% plant_t0)) #This is the new matrix.
     
     #Summing the stages into 3 categories for better plotting.
@@ -172,6 +167,8 @@ simulation <- function(){
   
   return(list("dispPop" = disperser_pop,"growthRate"= exp(loglambsim)))
 }
+
+
 
 #=============================================================================================================
 ### Part 3: Running Simulations 
@@ -216,6 +213,7 @@ for(k in hunt_seq)
   numRow<- numRow+1
   
 }
+
 
 ###=======================================================================
 ### Ploting
