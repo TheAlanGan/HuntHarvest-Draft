@@ -243,7 +243,8 @@ animal_sobol <- function(X) # X is matrix of parameters. Columns are each parame
       
       if (h_j == "low")
       {
-        pmat <- plant_t0_low
+        #pmat <- plant_t0_low
+        pmat <- plant_t0_high
         h_off <- constHunt
         
       }
@@ -285,11 +286,11 @@ animal_sobol <- function(X) # X is matrix of parameters. Columns are each parame
 #Fourier Amplitude Sens Test (Saltelli)
 # Estimating the Sobol indices using the 'fast99' function from 'sensitivity' package.
 
-fastPlant <- fast99(model = plant_sobol ,factors = 8, n = 10000, q.arg = list(min=0.0, max=1.0))
+fastPlant <- fast99(model = plant_sobol ,factors = 8, n = 1000, q.arg = list(min=0.0, max=1.0))
 print(fastPlant)
 plot(fastPlant)
 
-fastAnimal <- fast99(model = animal_sobol, factors = 8, n = 10000, q.arg = list(min=0.0, max=1.0))
+fastAnimal <- fast99(model = animal_sobol, factors = 8, n = 1000, q.arg = list(min=0.0, max=1.0))
 print(fastAnimal)
 plot(fastAnimal)
 
@@ -299,7 +300,7 @@ indicesFirstPlant <- (fastPlant$D1 / fastPlant$V)
 indicesFirstAnimal <- (fastAnimal$D1 / fastAnimal$V)
 
 data <- data.frame(indicesFirstPlant, indicesFirstAnimal)
-factList <- c('m', expression(delta["d,p"]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K["a"]), expression(delta["p,d"]))
+factList <- c('m', expression(delta["p->d"]), expression(G[t]), expression(S[t]), expression(hat(R)), expression(r[max]), expression(K["a"]), expression(delta["d->p"]))
 counts <- table(indicesFirstPlant, indicesFirstAnimal)
 barplot(t(as.matrix(data)), names.arg = factList, ylim = c(0,0.6), legend.text = c('Plant', 'Animal'), xlab = 'Parameters', ylab = 'First-Order Indices', col = c('yellowgreen', 'brown'), beside = TRUE)
 par(bg='white')
