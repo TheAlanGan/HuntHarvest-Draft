@@ -150,7 +150,7 @@ stoch_growth <- function(){
     p <- sigmoid(plant_to_AgoutiSteepness, adultCapacity/2, sum(plant_t0[12:17]))*.5+0.5 # bounded between 0.5 and 1.0
     #p is then used to calculate the population of agouti for the year i+1.
     agouti_vec[(i+1)] <- LogisticGrowthHunt(agoutiGrowth, agouti_vec[(i)],agoutiCapacity,h_off, p)
-    #popujlation can't be negative:
+    #population can't be negative:
     if (agouti_vec[j+1] < 0)
     {
       agouti_vec[j+1] <- 0
